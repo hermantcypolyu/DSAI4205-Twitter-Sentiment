@@ -1,0 +1,5 @@
+class,ovr_auc,best_threshold,best_binary_accuracy,always_majority_accuracy
+Negative,0.7814,0.325,0.7568,0.7044
+Positive,0.687,0.2579,0.5743,0.7213
+Irrelevant,0.6482,0.1735,0.6081,0.8209
+Neutral,0.6868,0.2227,0.5541,0.7534

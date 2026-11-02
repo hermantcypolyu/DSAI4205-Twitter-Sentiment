@@ -1,0 +1,113 @@
+{
+  "protocol": "Models are selected by 5-fold stratified CV on TRAIN only; the TEST file is scored once per configured model. Seed 42 for every split and estimator.",
+  "text_column": "phrase",
+  "text_column_rationale": "`phrase` (raw) beats `text_lemma` by ~4.5 pp on test. Cleaning is lossless (91.4% prediction agreement) but lemmatisation + stop-word removal removes 26% of the view - see experiments_headroom.py E3.",
+  "train_rows": 592,
+  "test_rows": 397,
+  "majority_baseline_accuracy": 0.302267,
+  "deployed_model": "M2 word+char union + LR",
+  "deployed_metrics": {
+    "accuracy": 0.541562,
+    "macro_f1": 0.504212,
+    "weighted_f1": 0.525163,
+    "balanced_accuracy": 0.504654,
+    "cohen_kappa": 0.366926,
+    "within1_accuracy": 0.758186
+  },
+  "per_class": [
+    {
+      "class": "Negative",
+      "precision": 0.510638,
+      "recall": 0.8,
+      "f1": 0.623377,
+      "support": 120
+    },
+    {
+      "class": "Positive",
+      "precision": 0.514563,
+      "recall": 0.5,
+      "f1": 0.507177,
+      "support": 106
+    },
+    {
+      "class": "Irrelevant",
+      "precision": 0.551724,
+      "recall": 0.242424,
+      "f1": 0.336842,
+      "support": 66
+    },
+    {
+      "class": "Neutral",
+      "precision": 0.649351,
+      "recall": 0.47619,
+      "f1": 0.549451,
+      "support": 105
+    }
+  ],
+  "cv_train_only": [
+    {
+      "model": "M1 word TF-IDF + LR",
+      "accuracy": 0.472973,
+      "macro_f1": 0.395976,
+      "weighted_f1": 0.427702,
+      "kappa": 0.26708
+    },
+    {
+      "model": "M2 word+char union + LR",
+      "accuracy": 0.491554,
+      "macro_f1": 0.427056,
+      "weighted_f1": 0.457864,
+      "kappa": 0.297995
+    },
+    {
+      "model": "M3 word+char union + LinearSVC",
+      "accuracy": 0.471284,
+      "macro_f1": 0.422146,
+      "weighted_f1": 0.449413,
+      "kappa": 0.275109
+    }
+  ],
+  "test_results": [
+    {
+      "model": "M1 word TF-IDF + LR",
+      "accuracy": 0.508816,
+      "macro_f1": 0.443375,
+      "weighted_f1": 0.474889,
+      "balanced_accuracy": 0.459826,
+      "cohen_kappa": 0.314936,
+      "within1_accuracy": 0.738035
+    },
+    {
+      "model": "M2 word+char union + LR",
+      "accuracy": 0.541562,
+      "macro_f1": 0.504212,
+      "weighted_f1": 0.525163,
+      "balanced_accuracy": 0.504654,
+      "cohen_kappa": 0.366926,
+      "within1_accuracy": 0.758186
+    },
+    {
+      "model": "M3 word+char union + LinearSVC",
+      "accuracy": 0.526448,
+      "macro_f1": 0.500275,
+      "weighted_f1": 0.517281,
+      "balanced_accuracy": 0.498764,
+      "cohen_kappa": 0.351065,
+      "within1_accuracy": 0.768262
+    }
+  ],
+  "best_test_model": "M2 word+char union + LR",
+  "best_test_accuracy": 0.541562,
+  "improvement_over_original_baseline_pp": 4.5,
+  "headroom_evidence": {
+    "cv_accuracy_real": 0.473,
+    "cv_accuracy_permuted_mean": 0.2808,
+    "cv_accuracy_permuted_sd": 0.0184,
+    "cv_accuracy_permuted_max": 0.3142,
+    "nn10_same_label_phrase": 0.3363,
+    "nn10_same_label_lemma": 0.3072,
+    "ensemble_3view_cv_accuracy": 0.4916,
+    "irrelevant_ovr_auc": 0.6482
+  },
+  "runtime_seconds": 36.8
+}

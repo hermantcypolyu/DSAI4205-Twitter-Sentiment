@@ -1,0 +1,16 @@
+{
+  "nn10_label_agreement_phrase": 0.336,
+  "nn10_has_any_agreeing_neighbour_phrase": 0.953,
+  "nn10_label_agreement_text": 0.331,
+  "nn10_has_any_agreeing_neighbour_text": 0.958,
+  "nn10_label_agreement_text_lemma": 0.336,
+  "nn10_has_any_agreeing_neighbour_text_lemma": 0.946,
+  "oof_accuracy_vs_human_labels": 0.473,
+  "self_trained_accuracy_vs_human_labels": 0.458,
+  "self_trained_accuracy_vs_pseudolabels": 0.938,
+  "cohen_kappa_4class": 0.267,
+  "within1_accuracy": 0.711,
+  "binary_pos_neg_cv_accuracy": 0.709,
+  "binary_pos_neg_majority": 0.515,
+  "three_class_cv_accuracy": 0.568
+}

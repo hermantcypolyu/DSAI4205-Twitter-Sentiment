@@ -1,0 +1,30 @@
+# DSAI4205 Group 8 - Twitter Sentiment
+# Python 3.10+ required. Tested on 3.10.12 / Linux x86_64, CPU only.
+
+# --- core -----------------------------------------------------------------
+scikit-learn==1.7.2
+pandas==2.3.3
+numpy==2.2.6
+scipy==1.15.3
+joblib==1.6.0
+
+# --- text cleaning --------------------------------------------------------
+ftfy==6.3.1              # mojibake repair (92 rows affected in this dataset)
+nltk==3.10.4             # vader_lexicon, wordnet, omw-1.4, stopwords
+
+# --- figures / reports ----------------------------------------------------
+matplotlib==3.10.9
+seaborn==0.13.2
+wordcloud==1.9.6
+python-docx              # .docx report generators
+nbformat                 # notebook generator
+
+# --- OPTIONAL: transformer models (src/train_final.py --with-transformer,
+#     src/explore_transformer.py). ~2 GB download, CPU training is slow. -----
+torch==2.14.1            # CPU build is fine; no GPU used in this project
+transformers==4.57.1
+sentencepiece==0.2.2     # required by DeBERTa-v3 / ALBERT tokenizers
+protobuf==7.36.2         # required by the DeBERTa-v3 tokenizer
+
+# After installing nltk, run once:
+#   python -c "import nltk; [nltk.download(p) for p in ('vader_lexicon','wordnet','omw-1.4','stopwords')]"

@@ -1,0 +1,89 @@
+{
+  "train_rows_in": 596,
+  "train_rows_out": 592,
+  "test_rows_in": 397,
+  "test_rows_out": 397,
+  "train_dropped": 4,
+  "test_dropped": 0,
+  "exact_overlap_after_cleaning": 1,
+  "class_balance": {
+    "train_counts": {
+      "Negative": 175,
+      "Positive": 165,
+      "Irrelevant": 106,
+      "Neutral": 146
+    },
+    "test_counts": {
+      "Negative": 120,
+      "Positive": 106,
+      "Irrelevant": 66,
+      "Neutral": 105
+    }
+  },
+  "length_stats": {
+    "count": 592.0,
+    "mean": 20.445945945945947,
+    "std": 12.95536201179393,
+    "min": 2.0,
+    "25%": 10.0,
+    "50%": 16.5,
+    "75%": 29.0,
+    "max": 66.0,
+    "test_mean": 20.571788413098236,
+    "upper_fence": 57.5
+  },
+  "vocab": {
+    "Unique vocab (raw)": 3367,
+    "Unique vocab (clean)": 3107
+  },
+  "issues": {
+    "Same text, different label": 1,
+    "HTML-like tags": 1,
+    "Exact duplicate rows": 3,
+    "Duplicate phrase text": 4,
+    "Anonymiser token RhandlerR": 6,
+    "Embedded URLs": 23,
+    "<unk> placeholder": 26,
+    "Mojibake (Ã/Â/â)": 94,
+    "Non-ASCII characters": 99,
+    "@mentions": 166,
+    "All-caps shouting": 171
+  },
+  "noise_by_class": {
+    "Negative": {
+      "Mojibake": 17.4,
+      "@mentions": 38.2,
+      "<unk> token": 3.9,
+      "URLs": 0.6,
+      "ALL-CAPS": 28.1,
+      "Ellipses": 18.0
+    },
+    "Positive": {
+      "Mojibake": 10.3,
+      "@mentions": 25.5,
+      "<unk> token": 7.3,
+      "URLs": 2.4,
+      "ALL-CAPS": 29.1,
+      "Ellipses": 21.8
+    },
+    "Irrelevant": {
+      "Mojibake": 17.0,
+      "@mentions": 28.3,
+      "<unk> token": 1.9,
+      "URLs": 4.7,
+      "ALL-CAPS": 33.0,
+      "Ellipses": 29.2
+    },
+    "Neutral": {
+      "Mojibake": 19.0,
+      "@mentions": 17.7,
+      "<unk> token": 3.4,
+      "URLs": 8.8,
+      "ALL-CAPS": 25.9,
+      "Ellipses": 36.1
+    }
+  },
+  "brands_found": 15,
+  "median_tokens": 16.5,
+  "imbalance_ratio": 1.65
+}

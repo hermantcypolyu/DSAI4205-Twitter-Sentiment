@@ -1,0 +1,127 @@
+{
+  "model": "TF-IDF (1-2 gram, sublinear) + multinomial Logistic Regression (C=1.0, lbfgs)",
+  "trained_on": "data/processed/train_clean.csv",
+  "train_rows": 592,
+  "test_rows": 397,
+  "tfidf_features": 7780,
+  "cv": [
+    {
+      "variant": "V1 raw text (no cleaning)",
+      "accuracy_mean": 0.473038,
+      "accuracy_std": 0.048807,
+      "macro_f1_mean": 0.394227,
+      "macro_f1_std": 0.057074,
+      "weighted_f1_mean": 0.426305,
+      "weighted_f1_std": 0.056269,
+      "short": "V1\nRaw\n(no cleaning)"
+    },
+    {
+      "variant": "V2 cleaned text",
+      "accuracy_mean": 0.469634,
+      "accuracy_std": 0.042806,
+      "macro_f1_mean": 0.394657,
+      "macro_f1_std": 0.047933,
+      "weighted_f1_mean": 0.425132,
+      "weighted_f1_std": 0.047153,
+      "short": "V2\nCleaned"
+    },
+    {
+      "variant": "V2b cleaned + stop-words removed",
+      "accuracy_mean": 0.486555,
+      "accuracy_std": 0.045906,
+      "macro_f1_mean": 0.408438,
+      "macro_f1_std": 0.057551,
+      "weighted_f1_mean": 0.440929,
+      "weighted_f1_std": 0.053404,
+      "short": "V2b\n+ stop-words\nremoved"
+    },
+    {
+      "variant": "V2c cleaned + stop-words + lemmatised",
+      "accuracy_mean": 0.473038,
+      "accuracy_std": 0.035412,
+      "macro_f1_mean": 0.394435,
+      "macro_f1_std": 0.050289,
+      "weighted_f1_mean": 0.426679,
+      "weighted_f1_std": 0.044752,
+      "short": "V2c\n+ lemmatised"
+    },
+    {
+      "variant": "V3 lemmatised + balanced class weight",
+      "accuracy_mean": 0.486498,
+      "accuracy_std": 0.032158,
+      "macro_f1_mean": 0.460348,
+      "macro_f1_std": 0.037455,
+      "weighted_f1_mean": 0.478386,
+      "weighted_f1_std": 0.035811,
+      "short": "V3\n+ balanced\nclass weight"
+    }
+  ],
+  "test_accuracy": 0.496222,
+  "test_macro_f1": 0.440293,
+  "test_weighted_f1": 0.467067,
+  "test_balanced_accuracy": 0.486146,
+  "test_balanced_macro_f1": 0.456107,
+  "test_balanced_weighted_f1": 0.475674,
+  "majority_baseline_accuracy": 0.302267,
+  "per_class": [
+    {
+      "class": "Negative",
+      "precision": 0.494845,
+      "recall": 0.8,
+      "f1": 0.611465,
+      "support": 120
+    },
+    {
+      "class": "Positive",
+      "precision": 0.418033,
+      "recall": 0.481132,
+      "f1": 0.447368,
+      "support": 106
+    },
+    {
+      "class": "Irrelevant",
+      "precision": 0.818182,
+      "recall": 0.136364,
+      "f1": 0.233766,
+      "support": 66
+    },
+    {
+      "class": "Neutral",
+      "precision": 0.585714,
+      "recall": 0.390476,
+      "f1": 0.468571,
+      "support": 105
+    }
+  ],
+  "learning_curve": {
+    "train_size": [
+      94,
+      189,
+      283,
+      378,
+      473
+    ],
+    "train_f1": [
+      0.9918119040288852,
+      0.9935894984180594,
+      0.9967768285390329,
+      0.9982049476075037,
+      0.9943928004107802
+    ],
+    "cv_f1": [
+      0.2499821447477757,
+      0.28862030266442035,
+      0.3335216441002874,
+      0.34932877586012767,
+      0.3732625751733344
+    ],
+    "cv_f1_std": [
+      0.050604692773592835,
+      0.024201266745383095,
+      0.04150629721289769,
+      0.041544299929713285,
+      0.03265002529580952
+    ]
+  },
+  "runtime_seconds": 5.1
+}

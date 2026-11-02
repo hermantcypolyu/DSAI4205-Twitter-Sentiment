@@ -1,0 +1,183 @@
+{
+  "train": {
+    "dataset": "train",
+    "steps": [
+      {
+        "step": 1,
+        "name": "Schema standardisation",
+        "action": "Renamed Phrase->phrase, Sentiment->sentiment; cast label to nullable Int64",
+        "detail": "train was float64 (Int64) while test was int64 -> unified to Int64 so the two files can be concatenated and compared safely",
+        "rows_affected": 596
+      },
+      {
+        "step": 2,
+        "name": "Missing-value handling",
+        "action": "Dropped rows with missing phrase or label (no imputation possible for text targets)",
+        "detail": "missing phrases=0, missing labels=0",
+        "rows_affected": 0
+      },
+      {
+        "step": 3,
+        "name": "Blank text removal",
+        "action": "Removed rows whose phrase was empty after trimming",
+        "detail": "0 blank rows",
+        "rows_affected": 0
+      },
+      {
+        "step": 4,
+        "name": "Exact duplicate removal",
+        "action": "Dropped duplicate (phrase, sentiment) pairs keeping first occurrence",
+        "detail": "3 exact duplicates removed",
+        "rows_affected": 3
+      },
+      {
+        "step": 5,
+        "name": "Conflicting-label resolution",
+        "action": "For identical text with different labels, kept the majority label (one row)",
+        "detail": "1 phrase(s) had conflicting labels across 2 rows; 1 rows removed",
+        "rows_affected": 1,
+        "conflicts": [
+          {
+            "phrase": "At the same time, despite the fact that there are currently some 100 million people living below the poverty line, most of them do not have access to health ser",
+            "labels_seen": [
+              0,
+              3
+            ],
+            "majority_label": 0,
+            "duplicate_count": 2
+          }
+        ]
+      },
+      {
+        "step": 6,
+        "name": "Invalid label correction",
+        "action": "Dropped labels outside the documented 0-3 domain",
+        "detail": "0 invalid labels",
+        "rows_affected": 0
+      },
+      {
+        "step": 7,
+        "name": "Encoding repair (mojibake)",
+        "action": "Applied ftfy.fix_text + Unicode NFKC to reverse UTF-8 read as cp1252",
+        "detail": "rows containing 'Ã/Â/â' before=94, after=2",
+        "rows_affected": 92
+      },
+      {
+        "step": 8,
+        "name": "Text normalisation & tokenisation",
+        "action": "lowercased; expanded contractions; stripped URLs, @mentions, HTML tags, <unk> placeholders; collapsed character elongation; removed non-alphabetic characters; tokenised on whitespace; removed stop-words (negations preserved)",
+        "detail": "0 rows became empty after cleaning (retained for review, flagged)",
+        "rows_affected": 592,
+        "empty_after_clean": 0
+      },
+      {
+        "step": 8.1,
+        "name": "Lemmatisation",
+        "action": "WordNet lemmatiser (verb pass then noun pass) on tokens of length > 2",
+        "detail": "unique vocabulary reduced from 2,885 to 2,511 tokens (13.0% reduction)",
+        "rows_affected": 592
+      },
+      {
+        "step": 9,
+        "name": "Outlier detection (text length)",
+        "action": "Flagged rows outside [Q1-1.5IQR, Q3+1.5IQR] tokens. NOT deleted - long tweets are legitimate",
+        "detail": "Q1=10.0, Q3=29.0, IQR=19.0, upper fence=57.5; 2 rows flagged (0.3%)",
+        "rows_affected": 0,
+        "flagged": 2,
+        "fences": {
+          "lower": 1.0,
+          "upper": 57.5
+        }
+      }
+    ],
+    "rows_in": 596,
+    "rows_out": 592,
+    "rows_dropped_total": 4
+  },
+  "test": {
+    "dataset": "test",
+    "steps": [
+      {
+        "step": 1,
+        "name": "Schema standardisation",
+        "action": "Renamed Phrase->phrase, Sentiment->sentiment; cast label to nullable Int64",
+        "detail": "train was float64 (Int64) while test was int64 -> unified to Int64 so the two files can be concatenated and compared safely",
+        "rows_affected": 397
+      },
+      {
+        "step": 2,
+        "name": "Missing-value handling",
+        "action": "Dropped rows with missing phrase or label (no imputation possible for text targets)",
+        "detail": "missing phrases=0, missing labels=0",
+        "rows_affected": 0
+      },
+      {
+        "step": 3,
+        "name": "Blank text removal",
+        "action": "Removed rows whose phrase was empty after trimming",
+        "detail": "0 blank rows",
+        "rows_affected": 0
+      },
+      {
+        "step": 4,
+        "name": "Exact duplicate removal",
+        "action": "Dropped duplicate (phrase, sentiment) pairs keeping first occurrence",
+        "detail": "0 exact duplicates removed",
+        "rows_affected": 0
+      },
+      {
+        "step": 5,
+        "name": "Conflicting-label resolution",
+        "action": "For identical text with different labels, kept the majority label (one row)",
+        "detail": "0 phrase(s) had conflicting labels across 0 rows; 0 rows removed",
+        "rows_affected": 0,
+        "conflicts": []
+      },
+      {
+        "step": 6,
+        "name": "Invalid label correction",
+        "action": "Dropped labels outside the documented 0-3 domain",
+        "detail": "0 invalid labels",
+        "rows_affected": 0
+      },
+      {
+        "step": 7,
+        "name": "Encoding repair (mojibake)",
+        "action": "Applied ftfy.fix_text + Unicode NFKC to reverse UTF-8 read as cp1252",
+        "detail": "rows containing 'Ã/Â/â' before=71, after=4",
+        "rows_affected": 67
+      },
+      {
+        "step": 8,
+        "name": "Text normalisation & tokenisation",
+        "action": "lowercased; expanded contractions; stripped URLs, @mentions, HTML tags, <unk> placeholders; collapsed character elongation; removed non-alphabetic characters; tokenised on whitespace; removed stop-words (negations preserved)",
+        "detail": "1 rows became empty after cleaning (retained for review, flagged)",
+        "rows_affected": 397,
+        "empty_after_clean": 1
+      },
+      {
+        "step": 8.1,
+        "name": "Lemmatisation",
+        "action": "WordNet lemmatiser (verb pass then noun pass) on tokens of length > 2",
+        "detail": "unique vocabulary reduced from 2,149 to 1,880 tokens (12.5% reduction)",
+        "rows_affected": 397
+      },
+      {
+        "step": 9,
+        "name": "Outlier detection (text length)",
+        "action": "Flagged rows outside [Q1-1.5IQR, Q3+1.5IQR] tokens. NOT deleted - long tweets are legitimate",
+        "detail": "Q1=10.0, Q3=28.0, IQR=18.0, upper fence=55.0; 8 rows flagged (2.0%)",
+        "rows_affected": 0,
+        "flagged": 8,
+        "fences": {
+          "lower": 1.0,
+          "upper": 55.0
+        }
+      }
+    ],
+    "rows_in": 397,
+    "rows_out": 397,
+    "rows_dropped_total": 0
+  },
+  "text_overlap_after_cleaning": 1
+}

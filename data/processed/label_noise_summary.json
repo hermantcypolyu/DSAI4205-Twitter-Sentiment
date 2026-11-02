@@ -1,0 +1,18 @@
+{
+  "n_train": 592,
+  "n_test": 397,
+  "pol_lexicon_rows": 153,
+  "clearly_positive_rows": 95,
+  "clearly_positive_labelled_positive": 39,
+  "clearly_positive_pct_positive": 41.1,
+  "clearly_negative_rows": 58,
+  "clearly_negative_labelled_negative": 31,
+  "clearly_negative_pct_negative": 53.4,
+  "vader_agreement_pos_neg": 62.7,
+  "exact_text_conflicts": 1,
+  "rows_in_conflicts": 2,
+  "ovr_auc_negative": 0.803,
+  "ovr_auc_positive": 0.708,
+  "ovr_auc_irrelevant": 0.675,
+  "ovr_auc_neutral": 0.741
+}

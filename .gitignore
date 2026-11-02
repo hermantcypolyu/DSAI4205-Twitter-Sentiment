@@ -1,0 +1,46 @@
+# ---- Python -------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+
+# ---- Virtual environments (Windows .venv is unusable on Linux; .venvlinux
+#      is a 1.4 GB local rebuild - neither belongs in git) -----------------
+.venv/
+.venvlinux/
+env/
+venv/
+ENV/
+
+# ---- Notebook / editor ------------------------------------------------
+.ipynb_checkpoints/
+.vscode/
+.idea/
+.DS_Store
+
+# ---- Large model weights (regenerate with train_final.py) --------------
+models/final_distilbert/
+models/*.pt
+models/*.bin
+models/*.safetensors
+models/*.ckpt
+
+# HuggingFace / torch caches
+.cache/
+*.h5
+
+# ---- macOS resource forks from the original zip ------------------------
+__MACOSX/
+
+# ---- Transient exploration artefacts (*_ prefix = sweep output) --------
+reports/tables/_*.csv
+reports/tables/_transformer_*.json
+reports/tables/_explore_models.csv
+data/processed/_*.csv
+data/processed/_*.json
+
+# ---- Logs --------------------------------------------------------------
+*.log

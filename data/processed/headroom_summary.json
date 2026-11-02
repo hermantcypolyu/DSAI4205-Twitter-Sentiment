@@ -1,0 +1,10 @@
+{
+  "cv_accuracy_real": 0.473,
+  "cv_accuracy_permuted_mean": 0.2808,
+  "cv_accuracy_permuted_sd": 0.0184,
+  "cv_accuracy_permuted_max": 0.3142,
+  "nn10_same_label_phrase": 0.3363,
+  "nn10_same_label_lemma": 0.3072,
+  "ensemble_3view_cv_accuracy": 0.4916,
+  "irrelevant_ovr_auc": 0.6482
+}

@@ -1,0 +1,7 @@
+view,cv_accuracy
+phrase,0.473
+text,0.4696
+text_lemma,0.473
+phrase_vs_text,0.9139
+phrase_vs_text_lemma,0.7348
+text_vs_text_lemma,0.7466
