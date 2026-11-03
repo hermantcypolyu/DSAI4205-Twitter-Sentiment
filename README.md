@@ -276,17 +276,139 @@ DSAI_project/
 
 ---
 
-## Next steps (Weeks 11–13)
+## Weeks 11–13: the N = 5 embedding × analytics-model matrix
 
-Five analytics models, each paired with a different embedding (N = 5 group members):
+The brief requires **N = 5 analytics models**, where N is the number of group
+members, each paired with a different **word embedding**. Two constraints come
+from the brief itself:
 
-| # | Embedding | Model |
-|---|---|---|
-| 1 | GloVe | Gradient Boosting (XGBoost / LightGBM) |
-| 2 | Word2Vec (from scratch) | Random Forest |
-| 3 | FastText (subword) | SVM |
-| 4 | BERT (fine-tuned) | Neural classifier head |
-| 5 | Sentence-BERT | kNN / MLP |
+- **TF-IDF is not a word embedding.** It is a sparse count vector, so it cannot
+  occupy one of the five slots.
+- **Logistic Regression is reserved for the baseline.** The deployed model
+  (M2) therefore cannot be re-used as one of the five.
 
-Chosen across different model families because the brief penalises near-identical
-tree models for lack of diversity.
+`src/embeddings_common.py` holds the protocol so all five are comparable:
+identical rows, identical folds (`StratifiedKFold(5, shuffle, seed=42)`),
+identical metric block, CV on **train only**, and the test file scored **exactly
+once** per model.
+
+| # | Embedding | Analytics model | Script |
+|---|---|---|---|
+| 1 | GloVe `glove-wiki-gigaword-100` (frozen, 100-d) | Gradient Boosting (XGBoost) | `embed_1_glove_xgb.py` |
+| 2 | Word2Vec skip-gram (**trained from scratch**) | Random Forest (500 trees) | `embed_2_word2vec_rf.py` |
+| 3 | FastText char 3–6-grams (**from scratch**) | SVM (RBF kernel) | `embed_3_fasttext_svm.py` |
+| 4 | DistilBERT (**fine-tuned**) | Neural classifier head | `embed_4_bert_head.py` |
+| 5 | Sentence-BERT `all-MiniLM-L6-v2` (frozen, 384-d) | k-Nearest-Neighbours (k=25, cosine) | `embed_5_sbert_knn.py` |
+
+The five are deliberately drawn from **different model families** — boosted
+trees, bagged trees, kernel SVM, a neural head, and a non-parametric neighbour
+vote — because the brief penalises near-identical tree models for lack of
+diversity. Report with `src/experiments_embeddings.py`.
+
+### Results
+
+Produced by `python src/experiments_embeddings.py`; full table in
+`reports/tables/embedding_model_matrix.csv`, figures `fig15` / `fig16`.
+
+| # | Embedding | Analytics model | CV acc | Test acc | Test macro-F1 | κ |
+|---|---|---|---|---|---|---|
+| 4 | DistilBERT (fine-tuned) | Neural classifier head | 53.7% ± 3.2 | **55.4%** | 0.4485 | 0.381 |
+| 5 | Sentence-BERT (all-MiniLM-L6-v2) | k-NN (k=25, cosine) | 49.7% ± 2.1 | **48.9%** | 0.4611 | 0.300 |
+| 1 | GloVe (glove-wiki-gigaword-100) | Gradient Boosting (XGBoost) | 36.8% ± 4.6 | **46.1%** | 0.4176 | 0.261 |
+| 3 | FastText (char 3–6-grams, from scratch) | SVM (RBF) | 39.2% ± 4.9 | **40.6%** | 0.3249 | 0.169 |
+| 2 | Word2Vec (from scratch) | Random Forest (500) | 43.1% ± 3.5 | **37.8%** | 0.3205 | 0.134 |
+| — | *TF-IDF (word + char union)* | *Logistic Regression (deployed)* | *49.2%* | *54.2%* | *0.5042* | *0.367* |
+
+*Last row is the reference: TF-IDF is a sparse count vector, not a word
+embedding, so it does **not** count toward N = 5. Majority-class baseline is
+30.2%. One test row = 0.25 pp, so gaps under ~1.5 pp are noise.*
+
+Two readings matter here.
+
+**Best eligible combination: DistilBERT + neural head, 55.4%.** That is 1.3 pp
+above the deployed TF-IDF model and 25.2 pp above the majority baseline. Because
+one test row is worth 0.252 pp, the DistilBERT-vs-TF-IDF gap is about **5 rows**
+— statistically real (test is fixed, seed is fixed) but substantively small.
+
+**Rank reversal between CV and test.** Word2Vec + RF has the *second-highest*
+CV accuracy (43.1%) but the *lowest* test accuracy (37.8%) — a 5.3 pp collapse,
+the largest in the matrix. FastText moves the same direction but mildly
+inverts (CV 39.2%, test 40.6%), so the ordering by CV does not predict the
+ordering by test either way. This is the reason the project reports a single
+held-out test score instead of trusting CV: with 592 training rows, CV folds
+share one fitted embedding space and so are not independent estimates of
+generalisation.
+
+### Why does TF-IDF still beat every embedding?
+
+Because on this dataset the classifier was never the bottleneck — the
+**representation was arithmetically lossy** in a way that hurts exactly the
+classes we cannot predict.
+
+**1. Mean pooling destroys the word order that carries sentiment.** Every
+non-transformer row reduces a tweet to one averaged vector. For *"not good"*
+that vector is `½(vec(not) + vec(good))`, which sits almost on top of *"good"*.
+A negation flips the label but barely moves the embedding — and negation cues
+are common here: **345 of 989 rows (34.9%) contain an explicit negation word.**
+TF-IDF keeps the bigram `not good` as its own independent feature, so a linear
+model can learn "this feature ⇒ Negative" directly. GloVe and Word2Vec are
+*structurally incapable* of representing this, no matter which classifier sits
+on top.
+
+Only DistilBERT avoids the problem, because its contextual encoder represents
+each token *given its sentence* rather than by a fixed lookup — which is
+precisely why it tops the eligible table.
+
+**2. A 592-tweet corpus cannot learn a good space from scratch.** Word2Vec and
+FastText produced a **4,280-vector vocabulary** from 12,565 training tokens —
+an average of only **2.9 occurrences per word**, with **73.2% of the vocabulary
+appearing exactly once**. Distributional methods cannot estimate a stable vector
+from a single occurrence, so most of the learned space is noise. GloVe has
+400,000 vectors from 6 billion tokens and scores much better (46.1%), which
+isolates the effect: the *same* XGBoost pipeline gains **8.3 pp** purely by
+swapping a badly-trained space for a well-trained one.
+
+**3. Coverage is not the problem — quality is.** GloVe's out-of-vocabulary rate
+on training tokens is only **17.9%**, and **zero** training rows had no
+in-vocabulary token at all, so coverage cannot explain its 46.1%. FastText's
+subword handling was genuinely exercised — **372 of 397 test rows contained at
+least one word never seen in training**, and every one of them was still
+embedded — yet it scored **third of five**. So the story is not "missing words";
+it is "present-but-uninformative vectors": a single 100-d average carries far
+less usable signal than thousands of sparse lexical features, each of which can
+be learned independently.
+
+**4. The evidence that this is a ceiling, not a tuning failure.** A logistic
+regression on the *identical* GloVe vectors scored CV 38.3% / test 41.1%,
+i.e. *worse* than XGBoost's 46.1% on the same vectors. Replacing the classifier
+moved accuracy by less than 5 pp, while replacing the embedding moved it by
+17.6 pp (Word2Vec 37.8% → DistilBERT 55.4%). The variance lives in the
+representation.
+
+### What this means for the ceiling claim
+
+The matrix strengthens the report's original conclusion rather than overturning
+it. DistilBERT is contextual — it is the only row whose representation can
+represent *"not good"* differently from *"good"* — and it lands at 55.4%, close
+to the 54.2% already reached by cheap TF-IDF. Adding an order-sensitive,
+pretrained, fine-tuned encoder bought roughly **one percentage point**. When the
+best representation available on this dataset is worth about 1 pp over a
+generation-, parameter- and cost-free baseline, the remaining error is not a
+modeling deficiency; it is consistent with the label-noise measurements in
+`exp_label_self_agreement.csv` (nearest-neighbour label agreement 0.336) and
+`exp_ovr_auc.csv` (Irrelevant OVR-AUC 0.648, *below* the 0.821 of always
+predicting "not Irrelevant").
+
+One finding is worth carrying forward: **Sentence-BERT + k-NN reached 48.9%,
+beating an MLP head on the exact same vectors (45.3% test, 47.1% CV).** k-NN is
+a pure nearest-neighbour vote with no fitted parameters, so its accuracy is a
+*direct* measurement of how often a tweet's nearest labelled neighbours share
+its label — the same quantity experiment E2 estimated at **0.3363** for k=10 on
+the raw `phrase` view (and 0.3144 at k=25, the k used here). The two independent
+measurements agree: E2 says roughly a third of nearest neighbours share a label,
+and k-NN — which predicts exactly that — scores 48.9%, well below what a
+well-separated four-class problem would allow. That agreement is the strongest
+single piece of evidence that a large part of this test set is not recoverable
+from the text.
+
+

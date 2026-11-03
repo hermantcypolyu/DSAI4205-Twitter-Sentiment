@@ -1,0 +1,87 @@
+{
+  "id": 4,
+  "embedding": "Sentence-BERT (all-MiniLM-L6-v2)",
+  "analytics_model": "k-Nearest-Neighbours",
+  "cv": {
+    "accuracy": 0.4966216216216216,
+    "macro_f1": 0.4574503297985204,
+    "weighted_f1": 0.47753622365657805,
+    "balanced_accuracy": 0.46453385719992074,
+    "cohen_kappa": 0.309566953016457,
+    "within1_accuracy": 0.7212837837837838,
+    "per_class": [
+      {
+        "class": "Negative",
+        "precision": 0.5274261603375527,
+        "recall": 0.7142857142857143,
+        "f1": 0.6067961165048543,
+        "support": 175
+      },
+      {
+        "class": "Positive",
+        "precision": 0.4897959183673469,
+        "recall": 0.5818181818181818,
+        "f1": 0.5318559556786704,
+        "support": 165
+      },
+      {
+        "class": "Irrelevant",
+        "precision": 0.46153846153846156,
+        "recall": 0.22641509433962265,
+        "f1": 0.3037974683544304,
+        "support": 106
+      },
+      {
+        "class": "Neutral",
+        "precision": 0.45794392523364486,
+        "recall": 0.3356164383561644,
+        "f1": 0.38735177865612647,
+        "support": 146
+      }
+    ]
+  },
+  "test": {
+    "accuracy": 0.48866498740554154,
+    "macro_f1": 0.4611267987791502,
+    "weighted_f1": 0.4774394750410811,
+    "balanced_accuracy": 0.4629425998529772,
+    "cohen_kappa": 0.29996351759841566,
+    "within1_accuracy": 0.6876574307304786,
+    "per_class": [
+      {
+        "class": "Negative",
+        "precision": 0.5167785234899329,
+        "recall": 0.6416666666666667,
+        "f1": 0.5724907063197026,
+        "support": 120
+      },
+      {
+        "class": "Positive",
+        "precision": 0.488,
+        "recall": 0.5754716981132075,
+        "f1": 0.5281385281385281,
+        "support": 106
+      },
+      {
+        "class": "Irrelevant",
+        "precision": 0.45,
+        "recall": 0.2727272727272727,
+        "f1": 0.33962264150943394,
+        "support": 66
+      },
+      {
+        "class": "Neutral",
+        "precision": 0.4578313253012048,
+        "recall": 0.3619047619047619,
+        "f1": 0.40425531914893614,
+        "support": 105
+      }
+    ]
+  },
+  "cv_accuracy_sd": 0.02092053592883067,
+  "embedding_dim": 384,
+  "embedding_source": "all-MiniLM-L6-v2, frozen",
+  "pooling": "SBERT sentence encoder",
+  "runtime_s": 0.1,
+  "notes": "k=25, cosine, distance-weighted vote"
+}

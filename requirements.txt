@@ -23,8 +23,17 @@ nbformat                 # notebook generator
 #     src/explore_transformer.py). ~2 GB download, CPU training is slow. -----
 torch==2.14.1            # CPU build is fine; no GPU used in this project
 transformers==4.57.1
+tokenizers==0.22.2       # PINNED: 0.23+ breaks slow->fast tokenizer conversion
 sentencepiece==0.2.2     # required by DeBERTa-v3 / ALBERT tokenizers
 protobuf==7.36.2         # required by the DeBERTa-v3 tokenizer
+
+# --- OPTIONAL: the N=5 embedding x analytics-model matrix
+#     (src/embed_1_glove_xgb.py ... src/embed_5_sbert_knn.py) --------------
+gensim==4.4.0            # GloVe download, Word2Vec, FastText
+sentence-transformers==3.4.1   # PINNED: 4.x+ requires transformers>=5.0
+xgboost==3.2.0           # combo 1: GloVe + gradient boosting
+lightgbm==4.7.0          # alternative booster (exploration only)
+tiktoken==0.14.0         # tokenizer backend used by some HF checkpoints
 
 # After installing nltk, run once:
 #   python -c "import nltk; [nltk.download(p) for p in ('vader_lexicon','wordnet','omw-1.4','stopwords')]"

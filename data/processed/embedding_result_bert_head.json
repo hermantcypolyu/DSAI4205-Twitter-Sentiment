@@ -1,0 +1,87 @@
+{
+  "id": 4,
+  "embedding": "BERT (fine-tuned)",
+  "analytics_model": "Neural classifier head",
+  "cv": {
+    "accuracy": 0.5371621621621622,
+    "macro_f1": 0.4343512443526216,
+    "weighted_f1": 0.4800496908782829,
+    "balanced_accuracy": 0.48294639150803537,
+    "cohen_kappa": 0.3587577433497128,
+    "within1_accuracy": 0.7449324324324325,
+    "per_class": [
+      {
+        "class": "Negative",
+        "precision": 0.5921052631578947,
+        "recall": 0.7714285714285715,
+        "f1": 0.6699751861042184,
+        "support": 175
+      },
+      {
+        "class": "Positive",
+        "precision": 0.49372384937238495,
+        "recall": 0.7151515151515152,
+        "f1": 0.5841584158415841,
+        "support": 165
+      },
+      {
+        "class": "Irrelevant",
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 106
+      },
+      {
+        "class": "Neutral",
+        "precision": 0.5284552845528455,
+        "recall": 0.4452054794520548,
+        "f1": 0.483271375464684,
+        "support": 146
+      }
+    ]
+  },
+  "test": {
+    "accuracy": 0.5541561712846348,
+    "macro_f1": 0.4485386930036377,
+    "weighted_f1": 0.5011182500934981,
+    "balanced_accuracy": 0.49529424977538183,
+    "cohen_kappa": 0.3809225944002961,
+    "within1_accuracy": 0.760705289672544,
+    "per_class": [
+      {
+        "class": "Negative",
+        "precision": 0.5960264900662252,
+        "recall": 0.75,
+        "f1": 0.6642066420664207,
+        "support": 120
+      },
+      {
+        "class": "Positive",
+        "precision": 0.5032679738562091,
+        "recall": 0.7264150943396226,
+        "f1": 0.5945945945945946,
+        "support": 106
+      },
+      {
+        "class": "Irrelevant",
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 66
+      },
+      {
+        "class": "Neutral",
+        "precision": 0.5698924731182796,
+        "recall": 0.5047619047619047,
+        "f1": 0.5353535353535354,
+        "support": 105
+      }
+    ]
+  },
+  "cv_accuracy_sd": 0.031835305765057616,
+  "embedding_dim": 768,
+  "embedding_source": "distilbert-base-uncased, end-to-end fine-tuned",
+  "pooling": "[CLS] + dense head",
+  "runtime_s": 0,
+  "notes": "4 epochs, max_len 64, batch 16, lr 3e-5"
+}
