@@ -21,7 +21,6 @@ Writes: data/processed/embedding_result_word2vec_rf.json
 """
 from __future__ import annotations
 
-from gensim.models import Word2Vec
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -35,6 +34,10 @@ def main() -> None:
     print("=" * 88)
     print("2/5  Word2Vec (trained from scratch on 592 tweets)  ->  Random Forest")
     print("=" * 88)
+
+    # imported here so the notebook cell can define this function without
+    # requiring gensim to be installed (it has no Python 3.14 wheel)
+    from gensim.models import Word2Vec
 
     X_tr, X_te, y_tr, y_te = load_data()
     print(f"  train {len(X_tr)} | test {len(X_te)}")

@@ -21,7 +21,6 @@ Writes: data/processed/embedding_result_fasttext_svm.json
 """
 from __future__ import annotations
 
-from gensim.models import FastText
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
@@ -35,6 +34,10 @@ def main() -> None:
     print("=" * 88)
     print("3/5  FastText (char 3-6-grams, trained from scratch)  ->  SVM (RBF)")
     print("=" * 88)
+
+    # imported here so the notebook cell can define this function without
+    # requiring gensim to be installed (it has no Python 3.14 wheel)
+    from gensim.models import FastText
 
     X_tr, X_te, y_tr, y_te = load_data()
     print(f"  train {len(X_tr)} | test {len(X_te)}")

@@ -39,7 +39,10 @@ import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 
-ROOT = Path(__file__).resolve().parents[1]
+try:  # normal script execution
+    ROOT = Path(__file__).resolve().parents[1]
+except NameError:  # running as a notebook cell
+    ROOT = Path.cwd()
 PROC = ROOT / "data" / "processed"
 TAB = ROOT / "reports" / "tables"
 FIG = ROOT / "reports" / "figures"

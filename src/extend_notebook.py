@@ -245,9 +245,40 @@ def strip_main(src: str) -> str:
     return re.split(r"\nif __name__ == [\"']__main__[\"']:", src)[0].rstrip()
 
 
+SETUP_CELL = code("""# --- Run-All setup: make the notebook independent of where Jupyter starts ---
+import os
+import sys
+from pathlib import Path
+
+
+def _find_repo_root(start: Path) -> Path:
+    for p in [start, *start.parents]:
+        if (p / "src" / "embeddings_common.py").exists():
+            return p
+    return start
+
+
+ROOT = _find_repo_root(Path.cwd().resolve())
+os.chdir(ROOT)
+if str(ROOT / "src") not in sys.path:
+    sys.path.insert(0, str(ROOT / "src"))
+print("Repository root located.")""")
+
+SETUP_NOTE = md("""> **Run All is supported.**
+> The first cell locates the repository root automatically, so the notebook
+> works even if Jupyter was started from another folder. Part II embeds the
+> five model scripts as function definitions; **Run All does not retrain them**.
+> Results are displayed from the checked-in artefacts in `models/` and
+> `data/processed/`, and the EDA/baseline sections in Part I do run.""")
+
+
 def main() -> None:
     with open(SRC_NB, encoding="utf-8") as f:
         nb = json.load(f)
+
+    # setup must run before the first code cell
+    nb["cells"].insert(1, SETUP_NOTE)
+    nb["cells"].insert(1, SETUP_CELL)
 
     # everything except the closing markdown cell
     nb["cells"].extend(CELLS[:-1])
@@ -267,7 +298,7 @@ from pathlib import Path
 ROOT = Path.cwd()
 if (ROOT / "src").is_dir():
     sys.path.insert(0, str(ROOT / "src"))
-print("repo root:", ROOT)"""))
+print("Repository root located.")"""))
 
     for rel in IMPL_FILES:
         path = ROOT / rel
