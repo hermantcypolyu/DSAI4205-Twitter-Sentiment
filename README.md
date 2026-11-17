@@ -14,9 +14,9 @@
 
 | I want to... | Open this |
 |---|---|
-| **Submit / show my professor** | `reports/Interim_Report_Group8_Twitter_Sentiment.docx` |
+| **Submit / show my professor** | `reports/Final_Report_Group8_Twitter_Sentiment.docx` |
 | **Understand the project in Cantonese** | `reports/白話解釋手冊_Group8_Twitter情緒分析.docx` |
-| **Submit the technical deliverable** | `DSAI4205_Interim_Group8_Twitter_Sentiment.ipynb` |
+| **Submit the technical deliverable** | `DSAI4205_Final_Group8_Twitter_Sentiment.ipynb` |
 | **Prepare for the consultation Q&A** | 白話解釋手冊 → Chapter 7 (Q&A cheat sheet) |
 
 ---
@@ -215,14 +215,23 @@ python src/explore_transformer.py microsoft/deberta-v3-small 4
 python src/embed_1_glove_xgb.py       # GloVe -> XGBoost   (~1 min, 66 MB download)
 python src/embed_2_word2vec_rf.py     # Word2Vec -> RF     (~10 s)
 python src/embed_3_fasttext_svm.py    # FastText -> SVM    (~5 s)
-python src/embed_4_bert_head.py       # DistilBERT head    (~15 min CPU)
+python src/embed_4_bert_frozen_mlp.py # DistilBERT (frozen) + MLP (eligible row)
+python src/embed_4_bert_head.py       # end-to-end fine-tuned reference (~15 min CPU)
 python src/embed_5_sbert_knn.py       # Sentence-BERT k-NN (~1 min, 90 MB download)
 python src/experiments_embeddings.py  # assemble -> reports/tables/embedding_model_matrix.csv
+
+# --- Phase 3iv baseline refinement (train-only CV, then one test score) --
+python src/explore_improved.py        # CV sweep -> reports/tables/improved_cv_sweep.csv
+python src/train_improved.py          # -> models/improved_metrics.json
+
+# --- final report --------------------------------------------------------
+python src/make_final_report.py       # -> reports/Final_Report_Group8_Twitter_Sentiment.docx
 
 # --- documents ----------------------------------------------------------
 python src/make_interim_report.py   # rebuild the formal .docx
 python src/make_layman_report.py    # rebuild the Cantonese guide
-python src/make_notebook.py         # rebuild the notebook JSON
+python src/make_notebook.py         # rebuild the interim notebook JSON
+python src/extend_notebook.py       # append Part II -> DSAI4205_Final_...ipynb
 python src/verify_consistency.py    # cross-document number check
 ```
 
@@ -245,7 +254,7 @@ documents cannot drift out of sync with the code.
 
 ```
 DSAI_project/
-├── DSAI4205_Interim_Group8_Twitter_Sentiment.ipynb   technical deliverable
+├── DSAI4205_Final_Group8_Twitter_Sentiment.ipynb     technical deliverable
 ├── Project description.pdf                           original brief
 ├── Data 5 - Twitter/Data 5 - Twitter/                raw inputs (untouched)
 │   ├── traindata.csv
@@ -285,7 +294,8 @@ DSAI_project/
     ├── embed_1_glove_xgb.py                          combo 1: GloVe + XGBoost
     ├── embed_2_word2vec_rf.py                        combo 2: Word2Vec + RF
     ├── embed_3_fasttext_svm.py                       combo 3: FastText + SVM
-    ├── embed_4_bert_head.py                          combo 4: DistilBERT + head
+    ├── embed_4_bert_frozen_mlp.py                    combo 4: DistilBERT (frozen) + MLP
+    ├── embed_4_bert_head.py                          end-to-end fine-tuned reference
     ├── embed_5_sbert_knn.py                          combo 5: SBERT + k-NN
     ├── experiments_embeddings.py                     assembles the N = 5 matrix
     ├── make_interim_report.py                        report generator
@@ -376,13 +386,17 @@ once** per model.
 | 1 | GloVe `glove-wiki-gigaword-100` (frozen, 100-d) | Gradient Boosting (XGBoost) | `embed_1_glove_xgb.py` |
 | 2 | Word2Vec skip-gram (**trained from scratch**) | Random Forest (500 trees) | `embed_2_word2vec_rf.py` |
 | 3 | FastText char 3–6-grams (**from scratch**) | SVM (RBF kernel) | `embed_3_fasttext_svm.py` |
-| 4 | DistilBERT (**fine-tuned**) | Neural classifier head | `embed_4_bert_head.py` |
+| 4 | DistilBERT (**frozen**) | Neural Network (MLP) | `embed_4_bert_frozen_mlp.py` |
 | 5 | Sentence-BERT `all-MiniLM-L6-v2` (frozen, 384-d) | k-Nearest-Neighbours (k=25, cosine) | `embed_5_sbert_knn.py` |
 
-The five are deliberately drawn from **different model families** — boosted
-trees, bagged trees, kernel SVM, a neural head, and a non-parametric neighbour
-vote — because the brief penalises near-identical tree models for lack of
-diversity. Assemble all five with `src/experiments_embeddings.py`.
+The five analytics models are **five distinct algorithms**: XGBoost, Random
+Forest, SVM, MLP and k-NN. The brief forbids using one model as both embedding
+and classifier, so DistilBERT is **frozen** and paired with an independently
+fitted MLP; the end-to-end fine-tuned result is kept only as an upper-bound
+reference. The consultation asked us to keep only one of Extra Trees / Random
+Forest and use a Neural Network for the other: Extra Trees is gone, Random
+Forest is the only RF, and the Neural Network is the MLP. Assemble all five with
+`src/experiments_embeddings.py`.
 
 ### Results
 
@@ -391,7 +405,7 @@ Source: `reports/tables/embedding_model_matrix.csv` (written by
 
 | # | Embedding | Analytics model | CV acc | Test acc | Test macro-F1 | κ | within-1 |
 |---|---|---|---|---|---|---|---|
-| 4 | DistilBERT (fine-tuned) | Neural classifier head | 53.7% ± 3.2 | **55.4%** | 0.4485 | 0.381 | 76.1% |
+| 4 | DistilBERT (frozen) | Neural Network (MLP) | 48.0% ± 4.1 | **53.4%** | 0.5004 | 0.366 | 75.1% |
 | 5 | Sentence-BERT (all-MiniLM-L6-v2) | k-NN (k=25, cosine) | 49.7% ± 2.1 | **48.9%** | 0.4611 | 0.300 | 68.8% |
 | 1 | GloVe (glove-wiki-gigaword-100) | Gradient Boosting (XGBoost) | 36.8% ± 4.6 | **46.1%** | 0.4176 | 0.261 | 74.1% |
 | 3 | FastText (char 3–6-grams, from scratch) | SVM (RBF) | 39.2% ± 4.9 | **40.6%** | 0.3249 | 0.169 | 67.8% |
@@ -404,15 +418,17 @@ embedding, so it does **not** count toward N = 5. Majority-class baseline is
 
 Two readings matter here.
 
-**Best eligible combination: DistilBERT + neural head, 55.4%.** That is 1.3 pp
-above the deployed TF-IDF model and 25.2 pp above the majority baseline. Because
-one test row is worth 0.252 pp, the DistilBERT-vs-TF-IDF gap is about **5 rows**
-— statistically real (test is fixed, seed is fixed) but substantively small.
+**Best eligible combination: frozen DistilBERT + MLP, 53.4%.** That is 0.8 pp
+*below* the deployed TF-IDF model (about three test rows) and 23.2 pp above the
+majority baseline. The end-to-end fine-tuned DistilBERT reference reaches 55.4%,
+but it is **not** counted toward N = 5 because it trains the encoder and the
+classifier jointly, which the brief forbids.
 
-**Rank reversal between CV and test.** Word2Vec + RF has the *second-highest*
+**Rank reversal between CV and test.** Word2Vec + RF has the *third-highest*
 CV accuracy (43.1%) but the *lowest* test accuracy (37.8%) — a 5.3 pp collapse,
-the largest in the matrix. FastText moves the other way (CV 39.2%, test 40.6%)
-and GloVe moves most of all (CV 36.8%, test 46.1%, +9.3 pp). With 592 training
+the largest in the matrix. FastText moves the other way (CV 39.2%, test 40.6%),
+GloVe + XGBoost gains the most (CV 36.8%, test 46.1%, +9.3 pp), and Sentence-BERT
+is the only model to fall (48.9% test vs 49.7% CV). With 592 training
 rows, CV folds share one fitted embedding space and so are not independent
 estimates of generalisation — which is why the project reports a single held-out
 test score rather than trusting CV.
@@ -429,10 +445,9 @@ good"* that vector is ½(vec(not) + vec(good)), which sits almost on top of
 *"good"*. A negation flips the label but barely moves the embedding. TF-IDF keeps
 the bigram `not good` as its own independent feature, so a linear model can learn
 "this feature ⇒ Negative" directly. GloVe and Word2Vec are *structurally
-incapable* of representing this, no matter which classifier sits on top. Only
-DistilBERT avoids the problem, because its contextual encoder represents each
-token *given its sentence* rather than by a fixed lookup — which is precisely why
-it tops the eligible table.
+incapable* of representing this, no matter which classifier sits on top. Frozen
+DistilBERT mitigates it: its vectors are contextual, so they carry sentence
+context even after pooling — which is why it is the strongest eligible row.
 
 **2. A 592-tweet corpus cannot learn a good space from scratch.** Word2Vec and
 FastText both produced a **4,280-vector vocabulary** (the `notes` column of
@@ -440,8 +455,8 @@ FastText both produced a **4,280-vector vocabulary** (the `notes` column of
 than 8 occurrences per training row before duplicate tokens are even considered.
 Distributional methods cannot estimate a stable vector from one or two
 occurrences, so much of the learned space is noise. GloVe has 400,000 vectors
-from 6 billion tokens and scores much better (46.1%) under the *same* XGBoost
-pipeline — the classifier is identical, only the space changed.
+from 6 billion tokens and scores better (46.1%) under XGBoost than the
+from-scratch spaces do under their own classifiers.
 
 **3. Coverage is not the problem — quality is.** GloVe's out-of-vocabulary rate
 on training tokens is only **17.9%** (`notes` column), so coverage cannot explain
@@ -452,20 +467,22 @@ average carries far less usable signal than thousands of sparse lexical features
 each of which can be learned independently.
 
 **4. The evidence that this is a ceiling, not a tuning failure.** Switching the
-embedding moved test accuracy by **17.6 pp** (Word2Vec 37.8% → DistilBERT 55.4%),
-while the deployed TF-IDF model and the best eligible combination sit only **1.3
-pp** apart. The variance lives in the representation — and the best
-representation available is worth about one point over a sparse lexical baseline
-that needs no pretraining, no GPU and no fine-tuning.
+embedding moved test accuracy by **15.6 pp** (Word2Vec 37.8% → frozen DistilBERT
+53.4%), while the deployed TF-IDF model is still **0.8 pp** above the best
+eligible combination. The end-to-end fine-tuned reference is 1.3 pp above
+TF-IDF, but it is not eligible. The variance lives in the representation, and
+the best *eligible* representation is not worth a point over a sparse lexical
+baseline that needs no pretraining, no GPU and no fine-tuning.
 
 ### What this means for the ceiling claim
 
 The matrix strengthens the report's original conclusion rather than overturning
-it. DistilBERT is contextual — it is the only row whose representation can
-express *"not good"* differently from *"good"* — and it lands at 55.4%, close to
-the 54.2% already reached by cheap TF-IDF. When the best representation available
-on this dataset is worth about 1 pp over a generation-, parameter- and
-cost-free baseline, the remaining error is not a modeling deficiency; it is
+it. DistilBERT is contextual — it is the only embedding whose representation can
+express *"not good"* differently from *"good"* — and frozen it lands at 53.4%,
+0.8 pp below the 54.2% already reached by cheap TF-IDF. The fine-tuned reference
+reaches 55.4%, but it is not an eligible combination. When the best representation
+available on this dataset is worth about a point over a generation-, parameter-
+and cost-free baseline, the remaining error is not a modeling deficiency; it is
 consistent with the label-noise measurements in `exp_label_self_agreement.csv`
 (nearest-neighbour label agreement 0.336) and `exp_ovr_auc.csv` (Irrelevant
 OVR-AUC 0.648, *below* the 0.821 of always predicting "not Irrelevant").

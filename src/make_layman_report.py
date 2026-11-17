@@ -251,6 +251,11 @@ def build() -> Path:
     eda = json.loads((PROC / "eda_summary.json").read_text(encoding="utf-8"))
     met = json.loads((ROOT / "models" / "baseline_metrics.json").read_text(encoding="utf-8"))
     log = json.loads((PROC / "cleaning_log.json").read_text(encoding="utf-8"))
+    fin = json.loads((ROOT / "models" / "final_metrics.json").read_text(encoding="utf-8"))
+    emb = json.loads((PROC / "embedding_matrix_summary.json").read_text(encoding="utf-8"))
+    dep = fin["deployed_metrics"]
+    best = max((r for r in emb["rows"] if r["eligible_for_n5"]),
+               key=lambda r: r["test_accuracy"])
 
     acc = met["test_accuracy"] * 100
     f1 = met["test_macro_f1"] * 100
@@ -304,7 +309,7 @@ def build() -> Path:
             "呢份唔係交俾 professor 嘅報告。呢份係你嘅「私人補習班」：用最白話嘅廣東話，"
             "由零開始解釋你做緊咩、為咩要咁做、啲數字係咩意思。睇完之後，你就可以好有信心"
             "咁同 professor 同組員傾你嘅項目。正式提交嘅版本係另一份 "
-            "Interim_Report_Group8_Twitter_Sentiment.docx。")
+            "Final_Report_Group8_Twitter_Sentiment.docx。")
 
     doc.add_paragraph()
     p = doc.add_paragraph()
@@ -329,7 +334,8 @@ def build() -> Path:
         ("7", "Professor 可能問嘅問題同標準答案", "面試前必睇"),
         ("8", "我哋發現嘅四個重點問題", "呢啲就係加分位"),
         ("9", "名詞速查表", "唔記得就返嚟查"),
-        ("10", "之後要做咩（Week 11-13）", "未來計劃"),
+        ("10", "最後結果：N = 5 模型同最終比較", "Week 11-13 做完咗啲咩"),
+        ("11", "Professor feedback 逐點回應", "consultation 之後嘅跟進"),
     ]
     for num, zh_t, desc in items:
         p = doc.add_paragraph()
@@ -759,12 +765,15 @@ def build() -> Path:
        "改咗幾多行、用咩規則。Random seed 全部固定做 42。"
        "連份報告都係由程式自動生成，數字直接由 JSON 讀，唔會同 code 唔一致。")
 
-    qa(doc, "你哋下一步會做咩？",
-       "Week 11-13 要做 N 個（N = 組員人數，即 5 個）模型配 word embedding。"
-       "我哋計劃用 GloVe + XGBoost、Word2Vec 由零訓練 + Random Forest、"
-       "FastText + SVM、BERT fine-tune、Sentence-BERT + kNN。"
-       "揀呢五個係為咗「多樣性」—— professor 講明如果全部都用 tree model 會低分。"
-       "同時會做 hyperparameter tuning，同埋繼續用 class weight 處理不平衡。")
+    qa(doc, "你哋 Week 11-13 做咗啲咩？",
+       "做齊咗 N = 5 個模型配 word embedding：GloVe + XGBoost、"
+       "Word2Vec 由零訓練 + Random Forest、FastText + SVM、"
+       "frozen DistilBERT + MLP、Sentence-BERT + kNN。全部用同一個 protocol："
+       "train-only 5-fold CV，test 只評分一次。DistilBERT 係 frozen，MLP 另外訓練，"
+       "符合 brief 嘅 integration 要求。最高分係 "
+       f"{best['embedding'].split(' (')[0]} + {best['analytics_model']}，"
+       f"test accuracy {best['test_accuracy']*100:.1f}%。我哋亦都做咗 Phase 3iv "
+       f"baseline 改良，test accuracy 由 {acc:.1f}% 升到 {dep['accuracy']*100:.1f}%。")
 
     qa(doc, "點解唔直接用 BERT？點解要繞咁大圈？",
        "因為 professor 嘅要求：Phase 3i 一定要用 TF-IDF + Logistic Regression 做 baseline。"
@@ -772,17 +781,18 @@ def build() -> Path:
        "亦都係好嘅工程習慣：先做最簡單可行嘅版本，確認 pipeline 冇問題，再加複雜度。")
 
     qa(doc, "你哋嘅模型喺真實世界用得到嗎？",
-       "以目前 baseline 嘅水平，未可以直接用 —— 50% 準確率對品牌監控係唔夠。"
-       "但呢個係 baseline。而且就算模型好準，都要配合人工覆核，特別係負面客訴，"
-       "因為錯過一個真投訴嘅代價，遠大於誤判一個。我哋嘅建議係："
-       "模型做「分流」（自動分類 + 排優先次序），人手做最後決定。")
+       f"最終模型 test accuracy 係 {dep['accuracy']*100:.1f}%，最好嘅 N = 5 模型係 "
+       f"{best['test_accuracy']*100:.1f}%。呢個水平唔可以當「自動判決」用，但做「分流」"
+       "就足夠：模型自動分類 + 排優先次序，人手做最後決定。特別係負面客訴，"
+       "因為錯過一個真投訴嘅代價，遠大於誤判一個。我哋亦都要喺 SLA 講清楚天花板："
+       "準確四分類大約一半，但方向（正/負）大約四分之三啱。")
 
     qa(doc, "你覺得呢個項目最大嘅問題係咩？",
        "（呢條係加分題，答得誠實會加分）最大問題係份數據缺少咗「entity（公司名）」"
        "呢一欄，但個任務定義係「針對某間公司評分」。結果「Irrelevant」呢一類根本冇清晰"
-       "定義，連人都判斷唔到，所以我哋嘅模型喺呢類嘅 Recall 只有 13.6%。"
+       "定義，連人都判斷唔到，所以我哋最終模型喺呢類嘅 Recall 只有 24.2%。"
        "呢個唔係調參數可以解決，係數據設計嘅問題。"
-       "我哋嘅處理方法係：誠實報告出嚟，同時證明加權重可以部分改善。")
+       "我哋嘅處理方法係：誠實報告出嚟，同時證明加權重可以將 recall 推到 30.3%。")
 
     # ------------------------------------------------ 8
     doc.add_page_break()
@@ -865,38 +875,67 @@ def build() -> Path:
 
     # ------------------------------------------------ 10
     doc.add_page_break()
-    h1(doc, "之後要做咩（Week 11-13）", "What comes next")
+    h1(doc, "最後結果：N = 5 模型同最終比較", "Final results: the N = 5 matrix")
 
     body(doc,
-         "baseline 完成之後，下一步係「進階建模」。Professor 嘅要求係：用 N 個"
-         "（N = 組員人數 = 5）唔同嘅分析模型，配合 word embedding 模型。"
-         "注意：Logistic Regression 已經用咗做 baseline，唔可以再計；TF-IDF 亦都"
-         "唔算 word embedding。")
+         "Week 11-13 我哋做齊咗五個模型，每個配一個唔同嘅 word embedding。"
+         "全部用同一個 protocol：train-only 5-fold CV，test 只評分一次。")
 
+    rows = sorted((r for r in emb["rows"] if r["eligible_for_n5"]),
+                  key=lambda r: -r["test_accuracy"])
     table(doc,
-          ["#", "Embedding（點將字變向量）", "Analytics model（點分類）", "為咩揀呢個"],
-          [
-              ["1", "GloVe（預訓練）", "XGBoost / LightGBM", "强大的樹模型，同 baseline 對比最明顯"],
-              ["2", "Word2Vec（由零訓練）", "Random Forest", "「由零訓練」有額外加分"],
-              ["3", "FastText（subword）", "SVM", "subword 可以處理串錯字同伸長字母"],
-              ["4", "BERT（預訓練 + fine-tune）", "神經網絡分類頭", "預計最高分，識得處理否定同語序"],
-              ["5", "Sentence-BERT", "kNN / MLP", "非參數方法，同其他四個形成對比"],
-          ],
-          widths=[0.3, 1.85, 1.7, 2.4], size=8.4)
+          ["#", "Word embedding", "Analytics model", "CV acc", "Test acc", "Macro F1"],
+          [[str(r["id"]), r["embedding"], r["analytics_model"],
+            f"{r['cv_accuracy']*100:.1f}%", f"{r['test_accuracy']*100:.1f}%",
+            f"{r['test_macro_f1']:.3f}"] for r in rows],
+          widths=[0.3, 1.95, 1.6, 0.85, 0.85, 0.85], size=8.0)
+
+    body(doc,
+         f"最高分係 {best['embedding'].split(' (')[0]} + {best['analytics_model']}，"
+         f"test accuracy {best['test_accuracy']*100:.1f}%。但佢只係比 TF-IDF baseline"
+         f"（{dep['accuracy']*100:.1f}%）高少少。呢個結果好重要：佢話俾我哋知，"
+         "喺 592 條資料上面，換 embedding 嘅回報有限，真正嘅瓶頸係 label noise 同"
+         "缺失嘅 entity column。")
 
     warnbox(doc, "為咩要揀咁唔同嘅五個？",
-            "Professor 明確講：如果用相似嘅模型（例如 Decision Tree、Random Forest、"
+            "Professor 講明：如果用相似嘅模型（例如 Decision Tree、Random Forest、"
             "Gradient Boosting 全部係樹），會因為「缺乏多樣性」而被扣分。"
-            "所以我哋刻意揀五個唔同家族：樹模型、機率模型、核方法（SVM）、"
-            "神經網絡、非參數方法。")
+            "所以最終五個係五個唔同算法：XGBoost、Random Forest、SVM、MLP、kNN。"
+            "矩陣只有一個 Random Forest、冇 Extra Trees；BERT 係 frozen，"
+            "MLP 另外訓練，符合 integration 要求。")
 
-    h2(doc, "時間表")
-    bullet(doc, "Week 11：建立共用嘅 embedding 模組，一次過產生 GloVe 同 Word2Vec 向量並存起。",
-           lead="")
-    bullet(doc, "Week 11-12：訓練模型 1-3，全部用同一個評估函數，確保公平比較。")
-    bullet(doc, "Week 12：Fine-tune BERT，加入 class weight。")
-    bullet(doc, "Week 12-13：Hyperparameter tuning，然後同 baseline 做最終比較（Phase 3iv）。")
-    bullet(doc, "Week 13：整合最終報告、準備 12 分鐘 presentation。")
+    h2(doc, "Class weight 嘅取捨")
+    body(doc,
+         "我哋亦都試咗 class weight。加權重之後，Irrelevant 嘅 Recall 由 24.2% 升到 30.3%，"
+         "Neutral 嘅 F1 都升，但 Negative 嘅 Recall 跌。呢個就係 professor 講嘅 trade-off："
+         "Macro F1 升、Accuracy 可能跌，唔代表模型變壞，只係我哋刻意幫最弱嘅類別。"
+         "最後我哋保留原本嘅 model 做 deployment，因為 test 上面佢整體仍然最好。")
+
+    # ------------------------------------------------ 11 feedback
+    doc.add_page_break()
+    h1(doc, "Professor feedback 逐點回應", "Response to consultation feedback")
+
+    body(doc, "Consultation 之後，我哋逐點跟進。下面係可以直接照講嘅版本。", size=9.5)
+
+    table(doc,
+          ["#", "Feedback", "我哋點回應"],
+          [
+              ["1", "45-50% 準確率係正常",
+               "報告用 30.2% 多數類基準同 label-noise 天花板去解釋，唔係當成藉口。"],
+              ["2", "冇 entity column，用文字分類可以接受",
+               "報告第 2.4 同 9.2 節清楚寫出限制，同埋佢對 Irrelevant 嘅影響。"],
+              ["3", "1.65:1 唔算嚴重失衡",
+               "我哋冇 resample，但有試 class weight，並逐類解釋影響。"],
+              ["4", "EDA 同報告結構正面",
+               "保留原有結構，再加 advanced modelling 章節。"],
+              ["5", "保留 CV，進階模型要有 validation/test 比較",
+               "N = 5 結果表同時列出 CV 同 test，仲有 CV-to-test 差距。"],
+              ["6", "Extra Trees / Random Forest 太相似，用 Neural Network",
+               "刪咗 Extra Trees；矩陣只有一個 Random Forest，Neural Network 係 frozen DistilBERT + MLP。"],
+              ["7", "Macro F1 升、Accuracy 跌要解釋",
+               "第 6.4 節逐類列出 recall/F1，解釋邊類升、邊類跌。"],
+          ],
+          widths=[0.3, 2.2, 3.85], size=7.8)
 
     h2(doc, "最後提醒")
     body(doc,
@@ -920,7 +959,7 @@ def build() -> Path:
 
     p = doc.add_paragraph()
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r = p.add_run("正式提交版請用：Interim_Report_Group8_Twitter_Sentiment.docx")
+    r = p.add_run("正式提交版請用：Final_Report_Group8_Twitter_Sentiment.docx")
     r.font.size = Pt(8.5)
     r.font.color.rgb = GREY
     zh(r)

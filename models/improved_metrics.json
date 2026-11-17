@@ -1,0 +1,94 @@
+{
+  "model": "phrase (word+char TF-IDF) + text_lemma (word TF-IDF) + LR (C=1.0, balanced)",
+  "protocol": "configuration fixed by 5-fold CV on TRAIN only; test scored once",
+  "cv": {
+    "accuracy": 0.5,
+    "macro_f1": 0.4590318502885344,
+    "weighted_f1": 0.4830739253503273,
+    "balanced_accuracy": 0.46685677250293434,
+    "cohen_kappa": 0.3165705281960679,
+    "within1_accuracy": 0.7483108108108109,
+    "per_class": [
+      {
+        "class": "Negative",
+        "precision": 0.5512820512820513,
+        "recall": 0.7371428571428571,
+        "f1": 0.6308068459657702,
+        "support": 175
+      },
+      {
+        "class": "Positive",
+        "precision": 0.49142857142857144,
+        "recall": 0.5212121212121212,
+        "f1": 0.5058823529411764,
+        "support": 165
+      },
+      {
+        "class": "Irrelevant",
+        "precision": 0.3387096774193548,
+        "recall": 0.19811320754716982,
+        "f1": 0.25,
+        "support": 106
+      },
+      {
+        "class": "Neutral",
+        "precision": 0.49586776859504134,
+        "recall": 0.410958904109589,
+        "f1": 0.449438202247191,
+        "support": 146
+      }
+    ]
+  },
+  "cv_accuracy_sd": 0.04192261052537101,
+  "cv_fold_accuracies": [
+    0.478992,
+    0.487395,
+    0.440678,
+    0.533898,
+    0.559322
+  ],
+  "test": {
+    "accuracy": 0.5264483627204031,
+    "macro_f1": 0.49891208601503195,
+    "weighted_f1": 0.5167581231201255,
+    "balanced_accuracy": 0.4985113942661112,
+    "cohen_kappa": 0.3514312031839274,
+    "within1_accuracy": 0.7707808564231738,
+    "per_class": [
+      {
+        "class": "Negative",
+        "precision": 0.5269461077844312,
+        "recall": 0.7333333333333333,
+        "f1": 0.6132404181184669,
+        "support": 120
+      },
+      {
+        "class": "Positive",
+        "precision": 0.4895833333333333,
+        "recall": 0.44339622641509435,
+        "f1": 0.46534653465346537,
+        "support": 106
+      },
+      {
+        "class": "Irrelevant",
+        "precision": 0.4444444444444444,
+        "recall": 0.30303030303030304,
+        "f1": 0.36036036036036034,
+        "support": 66
+      },
+      {
+        "class": "Neutral",
+        "precision": 0.6067415730337079,
+        "recall": 0.5142857142857142,
+        "f1": 0.5567010309278351,
+        "support": 105
+      }
+    ]
+  },
+  "comparison_vs_deployed": {
+    "deployed_model": "M2 word+char union + LR",
+    "accuracy_delta": -0.015114,
+    "macro_f1_delta": -0.0053,
+    "weighted_f1_delta": -0.008405
+  }
+}

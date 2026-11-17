@@ -1,0 +1,87 @@
+{
+  "id": 4,
+  "embedding": "DistilBERT (frozen)",
+  "analytics_model": "Neural Network (MLP)",
+  "cv": {
+    "accuracy": 0.4797297297297297,
+    "macro_f1": 0.44605704259104684,
+    "weighted_f1": 0.4702156079456342,
+    "balanced_accuracy": 0.45136976231315856,
+    "cohen_kappa": 0.2931315880270907,
+    "within1_accuracy": 0.7263513513513513,
+    "per_class": [
+      {
+        "class": "Negative",
+        "precision": 0.5775401069518716,
+        "recall": 0.6171428571428571,
+        "f1": 0.5966850828729282,
+        "support": 175
+      },
+      {
+        "class": "Positive",
+        "precision": 0.4666666666666667,
+        "recall": 0.509090909090909,
+        "f1": 0.48695652173913045,
+        "support": 165
+      },
+      {
+        "class": "Irrelevant",
+        "precision": 0.2753623188405797,
+        "recall": 0.1792452830188679,
+        "f1": 0.21714285714285714,
+        "support": 106
+      },
+      {
+        "class": "Neutral",
+        "precision": 0.46794871794871795,
+        "recall": 0.5,
+        "f1": 0.48344370860927155,
+        "support": 146
+      }
+    ]
+  },
+  "test": {
+    "accuracy": 0.5340050377833753,
+    "macro_f1": 0.5004144740417282,
+    "weighted_f1": 0.5274516758783322,
+    "balanced_accuracy": 0.5023544065996897,
+    "cohen_kappa": 0.3659570427155634,
+    "within1_accuracy": 0.7506297229219143,
+    "per_class": [
+      {
+        "class": "Negative",
+        "precision": 0.5915492957746479,
+        "recall": 0.7,
+        "f1": 0.6412213740458015,
+        "support": 120
+      },
+      {
+        "class": "Positive",
+        "precision": 0.5728155339805825,
+        "recall": 0.5566037735849056,
+        "f1": 0.5645933014354066,
+        "support": 106
+      },
+      {
+        "class": "Irrelevant",
+        "precision": 0.3090909090909091,
+        "recall": 0.25757575757575757,
+        "f1": 0.2809917355371901,
+        "support": 66
+      },
+      {
+        "class": "Neutral",
+        "precision": 0.5360824742268041,
+        "recall": 0.49523809523809526,
+        "f1": 0.5148514851485149,
+        "support": 105
+      }
+    ]
+  },
+  "cv_accuracy_sd": 0.04074745102398549,
+  "embedding_dim": 768,
+  "embedding_source": "distilbert-base-uncased, frozen",
+  "pooling": "masked mean of last hidden state",
+  "runtime_s": 47.0,
+  "notes": "encoder frozen; MLP 512-256 trained separately"
+}
