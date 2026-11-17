@@ -315,15 +315,13 @@ if str(ROOT / "src") not in sys.path:
     sys.path.insert(0, str(ROOT / "src"))
 print("Dependencies checked. Repository root located.")""")
 
-SETUP_NOTE = md("""> **Submission note: this notebook is self-contained.**
-> All preprocessing and model code is inside this file. The only external
-> input is the provided dataset: keep `traindata.csv` and `testdata.csv`
-> beside the notebook (or in the original `Data 5 - Twitter/` folder).
-> The first cell installs `ftfy`, `wordcloud`, `seaborn` and the NLTK data if
-> they are missing, then locates the project root. Part II embeds the model
-> scripts as function definitions and displays the recorded results as a
-> fallback when the repository files are absent; **Run All does not retrain
-> the five models**, and the EDA/baseline sections in Part I run live.""")
+SETUP_NOTE = md("""> **Submission note: this notebook is fully self-contained.**
+> All preprocessing and model code is inside this file, the dataset
+> (`traindata.csv`, `testdata.csv`) is embedded, and the final result tables
+> are embedded as a fallback. The first cell installs the small dependencies
+> and the NLTK data into the kernel you are using, then reconstructs the
+> dataset beside the notebook. **Run All does not retrain the five models**;
+> it runs the EDA/baseline sections live and displays the recorded results.""")
 
 
 def _csv_rows(path: Path) -> list[dict]:
@@ -345,9 +343,27 @@ def main() -> None:
         "improved_per_class": _csv_rows(ROOT / "reports" / "tables" / "improved_per_class.csv"),
     }
     part2_literal = repr(json.loads(json.dumps(part2)))
+
+    raw_dir = ROOT / "Data 5 - Twitter" / "Data 5 - Twitter"
+    raw_train = (raw_dir / "traindata.csv").read_text(encoding="utf-8")
+    raw_test = (raw_dir / "testdata.csv").read_text(encoding="utf-8")
+
     setup_source = (
         SETUP_CELL["source"]
-        + "\n\n# --- recorded results (fallback when repository files are absent) ---\n"
+        + "\n\n# --- dataset embedded so the notebook needs no external files ---\n"
+        + "RAW_TRAIN_CSV = " + repr(raw_train) + "\n"
+        + "RAW_TEST_CSV = " + repr(raw_test) + "\n"
+        + "_has_original = (\n"
+        + "    (ROOT / 'Data 5 - Twitter' / 'traindata.csv').exists()\n"
+        + "    or (ROOT / 'Data 5 - Twitter' / 'Data 5 - Twitter' / 'traindata.csv').exists()\n"
+        + ")\n"
+        + "if not _has_original:\n"
+        + "    for _name, _text in (('traindata.csv', RAW_TRAIN_CSV), ('testdata.csv', RAW_TEST_CSV)):\n"
+        + "        _p = ROOT / _name\n"
+        + "        if not _p.exists():\n"
+        + "            _p.write_text(_text, encoding='utf-8')\n"
+        + "print('Dataset ready next to the notebook.')\n"
+        + "\n# --- recorded results (fallback when repository files are absent) ---\n"
         + "PART2_DATA = " + part2_literal
     )
 
