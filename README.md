@@ -235,7 +235,7 @@ python src/extend_notebook.py       # append Part II -> DSAI4205_Final_...ipynb
 python src/verify_consistency.py    # cross-document number check
 ```
 
-The report generators read every number from JSON artefacts
+The documents draw every number from JSON artefacts
 (`models/baseline_metrics.json`, `models/final_metrics.json`,
 `data/processed/eda_summary.json`, `data/processed/cleaning_log.json`,
 `data/processed/headroom_summary.json`) rather than from hand-typed text, so the

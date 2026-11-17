@@ -1150,19 +1150,18 @@ identical tree models for lack of diversity.
 CELLS.append(md("""---
 ## 7. Reproducibility
 
-Everything in this notebook is deterministic. To regenerate the written report and every figure
+Everything in this notebook is deterministic. To reproduce every figure and table
 from the raw CSVs:
 
 ```bash
 python src/run_pipeline.py        # cleans data, writes data/processed/, EDA figures
 python src/train_baseline.py      # trains the baseline, writes models/, model figures
-python src/make_interim_report.py # rebuilds the .docx from the JSON artefacts
+python src/make_interim_report.py # writes the interim .docx from the JSON artefacts
 ```
 
-**Design note:** the report generator reads its numbers from
-`models/baseline_metrics.json` and `data/processed/eda_summary.json` rather than from
-hand-typed text. If the pipeline is re-run on refreshed data, the document regenerates with the new
-values and cannot silently disagree with the code.
+**Design note:** every reported number is tied to a JSON/CSV artefact. The write-up draws on
+`models/baseline_metrics.json` and `data/processed/eda_summary.json` rather than on hand-typed
+text, so it cannot silently disagree with the code.
 
 ### Artefact index
 

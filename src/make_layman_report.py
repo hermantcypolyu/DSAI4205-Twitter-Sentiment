@@ -262,6 +262,11 @@ def build() -> Path:
     maj = met["majority_baseline_accuracy"] * 100
 
     doc = Document()
+    cp = doc.core_properties
+    cp.author = "Group 8 - ChillGuy"
+    cp.last_modified_by = "Group 8 - ChillGuy"
+    cp.title = "項目白話解釋手冊 - Twitter 情緒分析"
+    cp.comments = ""
     st = doc.styles["Normal"]
     st.font.name = ZH_FONT
     st.font.size = Pt(10.5)
@@ -763,7 +768,7 @@ def build() -> Path:
        "清洗用一個共用嘅 text_clean.py，train 同 test 用同一個函數，"
        "所以唔會出現兩邊唔一致。每個步驟都有 log（cleaning_log.json）記錄"
        "改咗幾多行、用咩規則。Random seed 全部固定做 42。"
-       "連份報告都係由程式自動生成，數字直接由 JSON 讀，唔會同 code 唔一致。")
+       "報告裡面每個數字都對應一個 artefact，唔會同 code 唔一致。")
 
     qa(doc, "你哋 Week 11-13 做咗啲咩？",
        "做齊咗 N = 5 個模型配 word embedding：GloVe + XGBoost、"
