@@ -642,7 +642,7 @@ PROC = ROOT / "data" / "processed"
 PROC.mkdir(parents=True, exist_ok=True)
 train.to_csv(PROC / "train_clean.csv", index=False)
 test.to_csv(PROC / "test_clean.csv", index=False)
-print("wrote processed splits to", PROC)
+print("wrote processed splits to data/processed")
 
 cleaned_counts = train["sentiment"].astype(int).value_counts().sort_index()
 print(f"CLEANED train -> ratio = {cleaned_counts.max()/cleaned_counts.min():.2f} : 1, "
