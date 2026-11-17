@@ -24,7 +24,6 @@ Writes: data/processed/embedding_result_bert_frozen_mlp.json
 from __future__ import annotations
 
 import numpy as np
-import torch
 from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -41,6 +40,9 @@ def main() -> None:
     print(f"4/5  {MODEL_NAME} (frozen)  ->  Neural Network (MLP)")
     print("=" * 88)
 
+    # imported here so the notebook cell can define this function without
+    # requiring torch/transformers at cell-execution time
+    import torch
     from transformers import AutoModel, AutoTokenizer
 
     device = "cuda" if torch.cuda.is_available() else "cpu"

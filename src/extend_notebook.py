@@ -245,12 +245,44 @@ def strip_main(src: str) -> str:
     return re.split(r"\nif __name__ == [\"']__main__[\"']:", src)[0].rstrip()
 
 
-SETUP_CELL = code("""# --- Run-All setup: make the notebook independent of where Jupyter starts ---
+SETUP_CELL = code("""# --- Run-All setup: dependencies + repository root ---
+import importlib
+import importlib.util
 import os
+import subprocess
 import sys
 from pathlib import Path
 
+# 1) Small packages the notebook needs, installed into the SAME interpreter
+#    that runs this kernel (so it works even if Jupyter uses another Python).
+for module, package in [
+    ("nltk", "nltk"),
+    ("ftfy", "ftfy"),
+    ("wordcloud", "wordcloud"),
+    ("seaborn", "seaborn"),
+]:
+    if importlib.util.find_spec(module) is None:
+        print(f"Installing {package} ...")
+        try:
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "--quiet", package])
+        except Exception:
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "--quiet", "--user", package])
+importlib.invalidate_caches()
 
+# 2) NLTK corpora used by the cleaning and lexicon steps.
+import nltk
+for corpus, folder in [
+    ("vader_lexicon", "sentiment"),
+    ("wordnet", "corpora"),
+    ("omw-1.4", "corpora"),
+    ("stopwords", "corpora"),
+]:
+    try:
+        nltk.data.find(f"{folder}/{corpus}")
+    except LookupError:
+        nltk.download(corpus, quiet=True)
+
+# 3) Locate the repository root so relative paths work regardless of cwd.
 def _find_repo_root(start: Path) -> Path:
     for p in [start, *start.parents]:
         if (p / "src" / "embeddings_common.py").exists():
@@ -262,14 +294,15 @@ ROOT = _find_repo_root(Path.cwd().resolve())
 os.chdir(ROOT)
 if str(ROOT / "src") not in sys.path:
     sys.path.insert(0, str(ROOT / "src"))
-print("Repository root located.")""")
+print("Dependencies checked. Repository root located.")""")
 
 SETUP_NOTE = md("""> **Run All is supported.**
-> The first cell locates the repository root automatically, so the notebook
-> works even if Jupyter was started from another folder. Part II embeds the
-> five model scripts as function definitions; **Run All does not retrain them**.
-> Results are displayed from the checked-in artefacts in `models/` and
-> `data/processed/`, and the EDA/baseline sections in Part I do run.""")
+> The first cell installs `ftfy`, `wordcloud`, `seaborn` and the NLTK data into
+> the kernel you are using (if they are missing), then locates the repository
+> root. Part II embeds the five model scripts as function definitions;
+> **Run All does not retrain them**. Results are displayed from the checked-in
+> artefacts in `models/` and `data/processed/`, and the EDA/baseline sections
+> in Part I do run.""")
 
 
 def main() -> None:

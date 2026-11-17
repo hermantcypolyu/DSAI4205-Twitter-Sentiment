@@ -20,7 +20,6 @@ from __future__ import annotations
 import numpy as np
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-from xgboost import XGBClassifier
 
 from embeddings_common import (SEED, DocumentVectorizer, Timer, cv_and_test,
                                load_data, report, save_result, score_block,
@@ -32,6 +31,9 @@ def main() -> None:
     print("1/5  GloVe glove-wiki-gigaword-100  ->  XGBoost")
     print("=" * 88)
 
+    # imported here so the notebook cell can define this function without
+    # requiring xgboost at cell-execution time
+    from xgboost import XGBClassifier
     import gensim.downloader as api
     print("  loading GloVe (cached after first download, ~66 MB) ...")
     kv = api.load("glove-wiki-gigaword-100")
