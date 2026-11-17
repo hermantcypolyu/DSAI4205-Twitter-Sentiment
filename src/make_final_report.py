@@ -1293,11 +1293,14 @@ def build() -> Path:
     table(doc,
           ["Member", "Primary responsibility"],
           [
-              ["Chao Ka Kin", "EDA, data-quality audit and cleaning pipeline"],
-              ["Leung Wai Tsun", "Baseline model, evaluation protocol and metric tables"],
-              ["LIANG Zijian", "Classical embedding models (GloVe, Word2Vec, FastText)"],
-              ["Lam Kin Ho", "Transformer embeddings (DistilBERT, Sentence-BERT) and the N = 5 matrix"],
-              ["Yeung Tsz Chun Herman", "Integration, report generation, visualisation and repository"],
+              ["Chao Ka Kin", "Project lead; advanced modelling (N = 5 matrix), Phase 3iv refinement "
+                              "and model comparison (Sections 6-8)"],
+              ["Leung Wai Tsun", "EDA, data-quality audit and cleaning pipeline (Sections 2-4)"],
+              ["LIANG Zijian", "Baseline model, evaluation protocol and metric tables (Section 5)"],
+              ["Lam Kin Ho", "Headroom experiments, error analysis and business insights "
+                             "(Sections 9-10)"],
+              ["Yeung Tsz Chun Herman", "Report generation, visualisation, notebook and repository "
+                                        "(Sections 13-14)"],
           ],
           widths=[1.9, 4.4], font_size=8.4)
 
