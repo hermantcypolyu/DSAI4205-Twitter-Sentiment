@@ -16,7 +16,7 @@
 |---|---|
 | **Submit / show my professor** | `reports/Final_Report_Group8_Twitter_Sentiment.docx` |
 | **Understand the project in Cantonese** | `reports/白話解釋手冊_Group8_Twitter情緒分析.docx` |
-| **Submit the technical deliverable** | `DSAI4205_Interim_Group8_Twitter_Sentiment.ipynb` |
+| **Submit the technical deliverable** | `DSAI4205_Final_Group8_Twitter_Sentiment.ipynb` |
 | **Prepare for the consultation Q&A** | 白話解釋手冊 → Chapter 7 (Q&A cheat sheet) |
 
 ---
@@ -229,7 +229,8 @@ python src/make_final_report.py       # -> reports/Final_Report_Group8_Twitter_S
 # --- documents ----------------------------------------------------------
 python src/make_interim_report.py   # rebuild the formal .docx
 python src/make_layman_report.py    # rebuild the Cantonese guide
-python src/make_notebook.py         # rebuild the notebook JSON
+python src/make_notebook.py         # rebuild the interim notebook JSON
+python src/extend_notebook.py       # append Part II -> DSAI4205_Final_...ipynb
 python src/verify_consistency.py    # cross-document number check
 ```
 
@@ -252,7 +253,7 @@ documents cannot drift out of sync with the code.
 
 ```
 DSAI_project/
-├── DSAI4205_Interim_Group8_Twitter_Sentiment.ipynb   technical deliverable
+├── DSAI4205_Final_Group8_Twitter_Sentiment.ipynb     technical deliverable
 ├── Project description.pdf                           original brief
 ├── Data 5 - Twitter/Data 5 - Twitter/                raw inputs (untouched)
 │   ├── traindata.csv
