@@ -24,7 +24,7 @@ from sklearn.naive_bayes import ComplementNB
 from sklearn.pipeline import FeatureUnion, Pipeline
 from sklearn.svm import LinearSVC
 
-from embeddings_common import PROC, SEED
+from embeddings_common import PROC, SEED, TAB
 
 tr = pd.read_csv(PROC / "train_clean.csv")
 X = tr["phrase"].fillna("").astype(str)
@@ -96,6 +96,13 @@ acc = cross_val_score(pipe, Xdf, y, cv=skf, scoring="accuracy").mean()
 f1 = cross_val_score(pipe, Xdf, y, cv=skf, scoring="f1_macro").mean()
 rows.append(("phrase+lemma union (SELECTED)", acc, f1))
 print(f"  {'phrase+lemma union (SELECTED)':28} acc={acc:.4f}  macroF1={f1:.4f}", flush=True)
+
+with open(TAB / "improved_cv_sweep.csv", "w", newline="", encoding="utf-8") as f:
+    import csv
+    w = csv.writer(f)
+    w.writerow(["configuration", "cv_accuracy", "cv_macro_f1"])
+    w.writerows(rows)
+print(f"  saved -> {TAB / 'improved_cv_sweep.csv'}")
 
 print("\nBest by accuracy:")
 for name, acc, f1 in sorted(rows, key=lambda r: -r[1])[:5]:
