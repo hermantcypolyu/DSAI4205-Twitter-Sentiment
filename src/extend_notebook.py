@@ -14,6 +14,7 @@ Writes: DSAI4205_Final_Group8_Twitter_Sentiment.ipynb
 """
 from __future__ import annotations
 
+import csv
 import json
 import re
 import uuid
@@ -97,7 +98,10 @@ import pandas as pd
 
 pd.set_option("display.width", 200)
 
-matrix = pd.read_csv("reports/tables/embedding_model_matrix.csv")
+try:
+    matrix = pd.read_csv("reports/tables/embedding_model_matrix.csv")
+except FileNotFoundError:
+    matrix = pd.DataFrame(PART2_DATA["matrix"])
 cols = ["id", "embedding", "analytics_model", "cv_accuracy", "cv_sd",
         "test_accuracy", "test_macro_f1", "kappa", "within1", "role"]
 display(matrix.sort_values(["eligible_for_n5", "test_accuracy"],
@@ -128,10 +132,17 @@ Every candidate was scored by 5-fold CV on the **training file only**; the
 winning configuration was frozen before the test file was scored once. The full
 sweep is `reports/tables/improved_cv_sweep.csv`.
 """),
-    code("""sweep = pd.read_csv("reports/tables/improved_cv_sweep.csv")
+    code("""try:
+    sweep = pd.read_csv("reports/tables/improved_cv_sweep.csv")
+except FileNotFoundError:
+    sweep = pd.DataFrame(PART2_DATA["sweep"])
 display(sweep.sort_values("cv_macro_f1", ascending=False).head(8).round(4))"""),
-    code("""final = json.load(open("models/final_metrics.json", encoding="utf-8"))
-improved = json.load(open("models/improved_metrics.json", encoding="utf-8"))
+    code("""try:
+    final = json.load(open("models/final_metrics.json", encoding="utf-8"))
+    improved = json.load(open("models/improved_metrics.json", encoding="utf-8"))
+except FileNotFoundError:
+    final = PART2_DATA["final_metrics"]
+    improved = PART2_DATA["improved_metrics"]
 
 rows = []
 for r in final["cv_train_only"]:
@@ -151,8 +162,12 @@ minority class, at the cost of some accuracy on the largest class. The table
 below makes the per-class shift explicit, which is the point the consultation
 asked us to explain.
 """),
-    code("""dep = pd.read_csv("reports/tables/final_per_class.csv")
-b4 = pd.read_csv("reports/tables/improved_per_class.csv")
+    code("""try:
+    dep = pd.read_csv("reports/tables/final_per_class.csv")
+    b4 = pd.read_csv("reports/tables/improved_per_class.csv")
+except FileNotFoundError:
+    dep = pd.DataFrame(PART2_DATA["final_per_class"])
+    b4 = pd.DataFrame(PART2_DATA["improved_per_class"])
 comp = dep.merge(b4, on="class", suffixes=("_deployed", "_b4"))
 display(comp[["class", "recall_deployed", "recall_b4",
               "f1_deployed", "f1_b4"]].round(3))"""),
@@ -256,6 +271,10 @@ from pathlib import Path
 # 1) Small packages the notebook needs, installed into the SAME interpreter
 #    that runs this kernel (so it works even if Jupyter uses another Python).
 for module, package in [
+    ("numpy", "numpy"),
+    ("pandas", "pandas"),
+    ("sklearn", "scikit-learn"),
+    ("matplotlib", "matplotlib"),
     ("nltk", "nltk"),
     ("ftfy", "ftfy"),
     ("wordcloud", "wordcloud"),
@@ -296,22 +315,58 @@ if str(ROOT / "src") not in sys.path:
     sys.path.insert(0, str(ROOT / "src"))
 print("Dependencies checked. Repository root located.")""")
 
-SETUP_NOTE = md("""> **Run All is supported.**
-> The first cell installs `ftfy`, `wordcloud`, `seaborn` and the NLTK data into
-> the kernel you are using (if they are missing), then locates the repository
-> root. Part II embeds the five model scripts as function definitions;
-> **Run All does not retrain them**. Results are displayed from the checked-in
-> artefacts in `models/` and `data/processed/`, and the EDA/baseline sections
-> in Part I do run.""")
+SETUP_NOTE = md("""> **Submission note: this notebook is self-contained.**
+> All preprocessing and model code is inside this file. The only external
+> input is the provided dataset: keep `traindata.csv` and `testdata.csv`
+> beside the notebook (or in the original `Data 5 - Twitter/` folder).
+> The first cell installs `ftfy`, `wordcloud`, `seaborn` and the NLTK data if
+> they are missing, then locates the project root. Part II embeds the model
+> scripts as function definitions and displays the recorded results as a
+> fallback when the repository files are absent; **Run All does not retrain
+> the five models**, and the EDA/baseline sections in Part I run live.""")
+
+
+def _csv_rows(path: Path) -> list[dict]:
+    with open(path, encoding="utf-8", newline="") as f:
+        return list(csv.DictReader(f))
 
 
 def main() -> None:
     with open(SRC_NB, encoding="utf-8") as f:
         nb = json.load(f)
 
+    # Recorded results, embedded so Part II can run without the repository files.
+    part2 = {
+        "matrix": _csv_rows(ROOT / "reports" / "tables" / "embedding_model_matrix.csv"),
+        "sweep": _csv_rows(ROOT / "reports" / "tables" / "improved_cv_sweep.csv"),
+        "final_metrics": json.load(open(ROOT / "models" / "final_metrics.json", encoding="utf-8")),
+        "improved_metrics": json.load(open(ROOT / "models" / "improved_metrics.json", encoding="utf-8")),
+        "final_per_class": _csv_rows(ROOT / "reports" / "tables" / "final_per_class.csv"),
+        "improved_per_class": _csv_rows(ROOT / "reports" / "tables" / "improved_per_class.csv"),
+    }
+    part2_literal = repr(json.loads(json.dumps(part2)))
+    setup_source = (
+        SETUP_CELL["source"]
+        + "\n\n# --- recorded results (fallback when repository files are absent) ---\n"
+        + "PART2_DATA = " + part2_literal
+    )
+
     # setup must run before the first code cell
     nb["cells"].insert(1, SETUP_NOTE)
-    nb["cells"].insert(1, SETUP_CELL)
+    nb["cells"].insert(1, code(setup_source))
+
+    # inline text_clean so Part I does not depend on src/
+    tc_source = (ROOT / "src" / "text_clean.py").read_text(encoding="utf-8")
+    nb["cells"].insert(3, code(
+        "# --- src/text_clean.py (inlined so the notebook is self-contained) ---\n"
+        + tc_source
+        + "\n\n# register the inlined definitions as the `text_clean` module\n"
+          "import sys as _sys, types as _types\n"
+          "_tc = _types.ModuleType('text_clean')\n"
+          "_tc.__dict__.update({k: v for k, v in globals().items() if not k.startswith('__')})\n"
+          "_sys.modules['text_clean'] = _tc\n"
+          "print('text_clean loaded from the notebook.')"
+    ))
 
     # everything except the closing markdown cell
     nb["cells"].extend(CELLS[:-1])
@@ -338,6 +393,15 @@ print("Repository root located.")"""))
         if not path.exists():
             continue
         source = strip_main(path.read_text(encoding="utf-8"))
+        if rel.endswith("embeddings_common.py"):
+            source += (
+                "\n\n# register the inlined definitions as the `embeddings_common` module\n"
+                "import sys as _sys, types as _types\n"
+                "_ec = _types.ModuleType('embeddings_common')\n"
+                "_ec.__dict__.update({k: v for k, v in globals().items() if not k.startswith('__')})\n"
+                "_sys.modules['embeddings_common'] = _ec\n"
+                "print('embeddings_common loaded from the notebook.')"
+            )
         nb["cells"].append(md(f"### `{rel}`"))
         nb["cells"].append(code(source))
 

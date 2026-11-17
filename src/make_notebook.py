@@ -99,9 +99,14 @@ pd.set_option("display.max_colwidth", 110)
 
 # ---------------------------------------------------------------- paths
 ROOT = Path.cwd()
-DATA_DIR = ROOT / "Data 5 - Twitter" / "Data 5 - Twitter"
-TRAIN_CSV = DATA_DIR / "traindata.csv"
-TEST_CSV = DATA_DIR / "testdata.csv"
+_candidates = [
+    ROOT / "traindata.csv",
+    ROOT / "Data 5 - Twitter" / "traindata.csv",
+    ROOT / "Data 5 - Twitter" / "Data 5 - Twitter" / "traindata.csv",
+]
+TRAIN_CSV = next((p for p in _candidates if p.exists()), _candidates[-1])
+TEST_CSV = TRAIN_CSV.with_name("testdata.csv")
+DATA_DIR = TRAIN_CSV.parent
 PROC = ROOT / "data" / "processed"
 FIG = ROOT / "reports" / "figures"
 
@@ -631,6 +636,13 @@ def clean_frame(df: pd.DataFrame) -> tuple[pd.DataFrame, list[dict]]:
 train, train_log = clean_frame(train_raw)
 test, test_log = clean_frame(test_raw)
 display(pd.DataFrame(train_log).set_index("step"))
+
+# write the processed splits so the Part II scripts can be called directly
+PROC = ROOT / "data" / "processed"
+PROC.mkdir(parents=True, exist_ok=True)
+train.to_csv(PROC / "train_clean.csv", index=False)
+test.to_csv(PROC / "test_clean.csv", index=False)
+print("wrote processed splits to", PROC)
 
 cleaned_counts = train["sentiment"].astype(int).value_counts().sort_index()
 print(f"CLEANED train -> ratio = {cleaned_counts.max()/cleaned_counts.min():.2f} : 1, "
