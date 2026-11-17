@@ -1294,9 +1294,9 @@ def build() -> Path:
 
     h2(doc, "13.2  Division of work")
     body(doc,
-         "Primary responsibility for each workstream. Contributions are also recorded in the "
-         "repository history, which contains the staged commit trail for the pipeline, models and "
-         "documents.", italic=True)
+         "All five members contributed to drafting, reviewing and editing this report. The table "
+         "records primary ownership of each technical workstream; contributions are also recorded in "
+         "the repository history.", italic=True)
     table(doc,
           ["Member", "Primary responsibility"],
           [
@@ -1304,11 +1304,10 @@ def build() -> Path:
                               "and model comparison (Sections 6-8)"],
               ["Leung Wai Tsun", "EDA, data-quality audit and cleaning pipeline (Sections 2-4)"],
               ["LIANG Zijian", "Baseline model, evaluation protocol and metric tables (Section 5)"],
-              ["Lam Kin Ho", "Headroom experiments, error analysis and business insights "
-                             "(Sections 9-10)"],
-              ["Yeung Tsz Chun Herman", "Co-lead; report writing and editing, data visualisation, "
-                                        "notebook assembly, repository and integration "
-                                        "(Sections 13-14)"],
+              ["Lam Kin Ho", "Error analysis and business insights (Sections 9.1-9.2 and 10)"],
+              ["Yeung Tsz Chun Herman", "Technical co-lead; pipeline architecture and integration, "
+                                        "ceiling and label-noise experiments, repository, notebook "
+                                        "and report compilation (Sections 7.2, 9.3-9.5 and 13-14)"],
           ],
           widths=[1.9, 4.4], font_size=8.4)
 
