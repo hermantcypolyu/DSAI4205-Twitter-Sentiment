@@ -766,10 +766,11 @@ def build() -> Path:
        "連份報告都係由程式自動生成，數字直接由 JSON 讀，唔會同 code 唔一致。")
 
     qa(doc, "你哋 Week 11-13 做咗啲咩？",
-       "做齊咗 N = 5 個模型配 word embedding：GloVe + Neural Network (MLP)、"
+       "做齊咗 N = 5 個模型配 word embedding：GloVe + XGBoost、"
        "Word2Vec 由零訓練 + Random Forest、FastText + SVM、"
-       "BERT fine-tune、Sentence-BERT + kNN。全部用同一個 protocol："
-       "train-only 5-fold CV，test 只評分一次。最高分係 "
+       "frozen DistilBERT + MLP、Sentence-BERT + kNN。全部用同一個 protocol："
+       "train-only 5-fold CV，test 只評分一次。DistilBERT 係 frozen，MLP 另外訓練，"
+       "符合 brief 嘅 integration 要求。最高分係 "
        f"{best['embedding'].split(' (')[0]} + {best['analytics_model']}，"
        f"test accuracy {best['test_accuracy']*100:.1f}%。我哋亦都做咗 Phase 3iv "
        f"baseline 改良，test accuracy 由 {acc:.1f}% 升到 {dep['accuracy']*100:.1f}%。")
@@ -899,9 +900,9 @@ def build() -> Path:
     warnbox(doc, "為咩要揀咁唔同嘅五個？",
             "Professor 講明：如果用相似嘅模型（例如 Decision Tree、Random Forest、"
             "Gradient Boosting 全部係樹），會因為「缺乏多樣性」而被扣分。"
-            "所以最終五個係五個唔同家族：神經網絡（MLP）、bagged trees（Random Forest）、"
-            "核方法（SVM）、fine-tuned transformer（BERT）、非參數方法（kNN）。"
-            "全份矩陣只有一個樹模型。")
+            "所以最終五個係五個唔同算法：XGBoost、Random Forest、SVM、MLP、kNN。"
+            "矩陣只有一個 Random Forest、冇 Extra Trees；BERT 係 frozen，"
+            "MLP 另外訓練，符合 integration 要求。")
 
     h2(doc, "Class weight 嘅取捨")
     body(doc,
@@ -930,7 +931,7 @@ def build() -> Path:
               ["5", "保留 CV，進階模型要有 validation/test 比較",
                "N = 5 結果表同時列出 CV 同 test，仲有 CV-to-test 差距。"],
               ["6", "Extra Trees / Random Forest 太相似，用 Neural Network",
-               "刪咗 Extra Trees；矩陣只有一個 Random Forest，GloVe 配 Neural Network (MLP)。"],
+               "刪咗 Extra Trees；矩陣只有一個 Random Forest，Neural Network 係 frozen DistilBERT + MLP。"],
               ["7", "Macro F1 升、Accuracy 跌要解釋",
                "第 6.4 節逐類列出 recall/F1，解釋邊類升、邊類跌。"],
           ],

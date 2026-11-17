@@ -15,6 +15,7 @@ Writes: DSAI4205_Final_Group8_Twitter_Sentiment.ipynb
 from __future__ import annotations
 
 import json
+import re
 import uuid
 from pathlib import Path
 
@@ -62,12 +63,14 @@ members (five), each paired with a different **word embedding**.
 - TF-IDF is **not** a word embedding, so it cannot occupy one of the five slots.
   It is kept as a reference row only.
 - Logistic Regression is reserved for the baseline, so it cannot be reused.
-- The consultation asked us to avoid near-identical tree models: keep only one
-  of Extra Trees / Random Forest and use a Neural Network for the other.
+- The five analytics models must be **different algorithms**.
+- A single model may not serve as both embedding and classifier. DistilBERT is
+  therefore frozen and paired with an independently fitted MLP.
+- The consultation asked us to avoid near-identical tree models: only one
+  Random Forest, no Extra Trees, and a Neural Network included.
 
-The final five are therefore five distinct families: a shallow neural network,
-a bagged tree ensemble, a kernel SVM, a fine-tuned transformer, and a
-non-parametric neighbour vote.
+The final five analytics models are XGBoost, Random Forest, SVM, MLP and k-NN -
+five distinct algorithms.
 """),
     md("""### 8.2 Protocol
 
@@ -81,9 +84,11 @@ non-parametric neighbour vote.
 
 Two adapters are needed. Dense document vectors (GloVe, Word2Vec, FastText,
 Sentence-BERT) are mean-pooled into one vector per tweet and passed to a
-classical estimator. DistilBERT takes token ids, so it is fine-tuned end to end.
-Mean pooling is a deliberate baseline choice; it is also the main reason the
-non-transformer embeddings underperform, because it discards word order.
+classical estimator. Frozen DistilBERT takes token ids, produces one 768-d
+masked-mean vector per tweet, and hands that matrix to an independently fitted
+MLP; the encoder is never trained. Mean pooling is a deliberate baseline choice;
+it is also a reason the non-transformer embeddings underperform, because it
+discards word order.
 """),
     code("""import json
 from pathlib import Path
@@ -103,9 +108,10 @@ display(matrix.sort_values(["eligible_for_n5", "test_accuracy"],
 
 Three observations matter:
 
-- **DistilBERT is the only eligible model that beats the deployed TF-IDF
-  reference on test accuracy**, and the margin is about five test rows
-  (one test row = 0.25 pp).
+- **Frozen DistilBERT + MLP is the strongest eligible model**, but it does not
+  beat the deployed TF-IDF reference. The end-to-end fine-tuned reference does,
+  but it is not counted because it trains encoder and classifier jointly. One
+  test row is 0.25 pp.
 - **The CV-to-test column exposes rank reversals.** Word2Vec + RF has strong CV
   accuracy but the lowest test accuracy; Sentence-BERT falls from CV to test.
   With 592 training rows, CV folds share one fitted embedding space, so CV is
@@ -217,10 +223,62 @@ python src/make_final_report.py       # rebuild the final .docx
 ]
 
 
+IMPL_FILES = [
+    "src/embeddings_common.py",
+    "src/embed_1_glove_xgb.py",
+    "src/embed_2_word2vec_rf.py",
+    "src/embed_3_fasttext_svm.py",
+    "src/embed_4_bert_frozen_mlp.py",
+    "src/embed_5_sbert_knn.py",
+    "src/experiments_embeddings.py",
+    "src/train_improved.py",
+]
+
+
+def strip_main(src: str) -> str:
+    """Remove the `if __name__ == '__main__': main()` block.
+
+    In a notebook `__name__` is '__main__', so leaving it in would execute the
+    training routine the moment the cell is run. The functions stay defined and
+    can be called explicitly.
+    """
+    return re.split(r"\nif __name__ == [\"']__main__[\"']:", src)[0].rstrip()
+
+
 def main() -> None:
     with open(SRC_NB, encoding="utf-8") as f:
         nb = json.load(f)
-    nb["cells"].extend(CELLS)
+
+    # everything except the closing markdown cell
+    nb["cells"].extend(CELLS[:-1])
+
+    nb["cells"].append(md("""## 14. Full model implementation
+
+This section embeds the exact source code that produced Part II. The cells are
+deliberately side-effect-free: their `main()` entry points are removed so that
+running a cell only defines functions. Call `main()` explicitly to retrain a
+row. The shared protocol lives in `embeddings_common.py`; each model script then
+declares its embedding and estimator and calls `cv_and_test`.
+"""))
+
+    nb["cells"].append(code("""import sys
+from pathlib import Path
+
+ROOT = Path.cwd()
+if (ROOT / "src").is_dir():
+    sys.path.insert(0, str(ROOT / "src"))
+print("repo root:", ROOT)"""))
+
+    for rel in IMPL_FILES:
+        path = ROOT / rel
+        if not path.exists():
+            continue
+        source = strip_main(path.read_text(encoding="utf-8"))
+        nb["cells"].append(md(f"### `{rel}`"))
+        nb["cells"].append(code(source))
+
+    nb["cells"].append(CELLS[-1])  # closing markdown
+
     with open(OUT_NB, "w", encoding="utf-8") as f:
         json.dump(nb, f, indent=1, ensure_ascii=False)
     print(f"written -> {OUT_NB}")

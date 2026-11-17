@@ -54,10 +54,10 @@ N_SPLITS = 5
 
 # The five eligible combinations, in the order the report declares them.
 MATRIX_ROWS = [
-    (1, "GloVe (glove-wiki-gigaword-100)", "Neural Network (MLP)"),
+    (1, "GloVe (glove-wiki-gigaword-100)", "Gradient Boosting (XGBoost)"),
     (2, "Word2Vec (trained from scratch)", "Random Forest"),
     (3, "FastText (subword)", "Support Vector Machine"),
-    (4, "BERT (fine-tuned)", "Neural classifier head"),
+    (4, "DistilBERT (frozen)", "Neural Network (MLP)"),
     (5, "Sentence-BERT (all-MiniLM-L6-v2)", "k-Nearest-Neighbours"),
 ]
 

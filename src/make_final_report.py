@@ -83,6 +83,8 @@ def build() -> Path:
     emb_rows = sorted([r for r in emb["rows"] if r["eligible_for_n5"]],
                       key=lambda r: -r["test_accuracy"])
     ref_row = [r for r in emb["rows"] if not r["eligible_for_n5"]][0]
+    ft_ref = jload(PROC / "embedding_result_bert_head.json")
+    best_elig = emb_rows[0]
     base_acc, base_f1 = met["test_accuracy"], met["test_macro_f1"]
 
     conf_f, n_test = confusion("final_predictions.csv")
@@ -217,7 +219,8 @@ def build() -> Path:
         ("10", "Business Insights and Decision Support", "Phase 4: storytelling with data"),
         ("11", "Response to Consultation Feedback", "How each comment was addressed"),
         ("12", "Limitations, Conclusion and Recommendations", "What the system can and cannot do"),
-        ("13", "Reproducibility and Artefact Index", "How a marker can re-run everything"),
+        ("13", "Project Management, Schedule and Contributions", "Delivery record and assessment map"),
+        ("14", "Reproducibility and Artefact Index", "How a marker can re-run everything"),
         ("A", "Appendix - Cleaning Log", "Row-level audit trail"),
         ("B", "Appendix - Full Metric Detail", "CV variants and model comparisons"),
         ("C", "Appendix - Per-Class Results (N = 5)", "Precision, recall and F1 for every model"),
@@ -270,23 +273,25 @@ def build() -> Path:
                dpp(dep["accuracy"] - base_acc) + " vs baseline"],
               ["Phase 3iv improved B4 (phrase+lemma, balanced)", p(imp_test["accuracy"]),
                p(imp_test["macro_f1"]), "CV-selected; see Section 6"],
-              ["Best N = 5 model: DistilBERT + neural head", p(emb_rows[0]["test_accuracy"]),
-               p(emb_rows[0]["test_macro_f1"]),
-               dpp(emb_rows[0]["test_accuracy"] - dep["accuracy"]) + " vs deployed"],
-              ["Best N = 5 model other than DistilBERT: SBERT + kNN",
-               p(next(r for r in emb_rows if r["id"] == 5)["test_accuracy"]),
-               p(next(r for r in emb_rows if r["id"] == 5)["test_macro_f1"]),
-               "Non-parametric reference"],
+              ["Best eligible N = 5 model (DistilBERT + MLP)", p(best_elig["test_accuracy"]),
+               p(best_elig["test_macro_f1"]),
+               dpp(best_elig["test_accuracy"] - dep["accuracy"]) + " vs deployed"],
+              ["End-to-end fine-tuned DistilBERT (reference, not counted)",
+               p(ft_ref["test"]["accuracy"]), f"{ft_ref['test']['macro_f1']:.3f}",
+               "Trains encoder + head jointly; see 7.1"],
           ],
           widths=[2.4, 0.95, 0.85, 2.3], font_size=8.4)
 
     body(doc,
-         f"The N = 5 matrix answers the brief's advanced-modelling requirement. DistilBERT is the "
-         f"only model that clearly beats the deployed baseline on test accuracy "
-         f"({p(emb_rows[0]['test_accuracy'])} vs {p(dep['accuracy'])}), and the margin is about five "
-         "test rows. Every other embedding lands below the cheap TF-IDF reference. Section 7 "
-         "explains why: on a 592-row corpus, a single mean-pooled vector loses the word order that "
-         "carries negation, while TF-IDF keeps phrases such as 'not good' as independent features.")
+         f"The N = 5 matrix answers the brief's advanced-modelling requirement. The strongest "
+         f"eligible combination is frozen DistilBERT embeddings with an independent MLP at "
+         f"{p(best_elig['test_accuracy'])}, which is "
+         f"{dpp(best_elig['test_accuracy'] - dep['accuracy'])} relative to the deployed TF-IDF "
+         f"model. The end-to-end fine-tuned reference reaches {p(ft_ref['test']['accuracy'])}, but "
+         "it is not counted toward N = 5 because it trains the encoder and the classifier jointly "
+         "(Section 7.1). No eligible embedding beats the cheap TF-IDF reference. Section 7 explains "
+         "why: on a 592-row corpus, a single mean-pooled vector loses the word order that carries "
+         "negation, while TF-IDF keeps phrases such as 'not good' as independent features.")
 
     h2(doc, "1.2  The five findings")
     bullet(doc,
@@ -322,8 +327,10 @@ def build() -> Path:
            f"{(max(r['test_accuracy'] for r in emb_rows)-min(r['test_accuracy'] for r in emb_rows))*100:.1f} pp "
            f"({p(min(r['test_accuracy'] for r in emb_rows))} for the weakest embedding to "
            f"{p(max(r['test_accuracy'] for r in emb_rows))} for the strongest). The classifier is not "
-           "the bottleneck; the representation is. The best available representation is worth about "
-           f"{(emb_rows[0]['test_accuracy']-dep['accuracy'])*100:.1f} pp over sparse lexical features.",
+           "the bottleneck; the representation is. The best eligible representation is "
+           f"{(best_elig['test_accuracy']-dep['accuracy'])*100:+.1f} pp relative to sparse lexical "
+           f"features, while the end-to-end fine-tuned reference is "
+           f"{(ft_ref['test']['accuracy']-dep['accuracy'])*100:+.1f} pp.",
            bold_lead="Finding 5 - Representation, not classifier complexity, is the lever. ")
 
     callout(doc, "Recommendation",
@@ -812,16 +819,23 @@ def build() -> Path:
 
     h2(doc, "7.1  Design constraints")
     body(doc,
-         "The brief requires N analytics models, where N is the number of group members (five), each "
-         "paired with a different word embedding. Two constraints come from the brief itself:")
+         "The brief requires N different analytics models, where N is the number of group members "
+         "(five), each paired with a word embedding. Four constraints come from the brief itself:")
     bullet(doc, "TF-IDF is not a word embedding, so it cannot occupy one of the five slots. It is kept "
                 "as a reference row only.")
     bullet(doc, "Logistic Regression is reserved for the baseline, so it cannot be reused as one of "
                 "the five.")
+    bullet(doc, "The five analytics models must be different. Ours are XGBoost, Random Forest, SVM, "
+                "MLP and k-NN - five distinct algorithms.")
+    bullet(doc, "A single model may not serve as both the embedding model and the classifier. "
+                "DistilBERT is therefore FROZEN and used only as an embedding extractor; an "
+                "independent MLP is fitted on its pooled vectors. The end-to-end fine-tuned result "
+                "is reported as a reference only and is not counted toward N = 5.")
     body(doc,
-         "The consultation added a third constraint: avoid near-identical models. We therefore keep "
-         "exactly one tree ensemble and use a Neural Network for the row that previously used "
-         "boosted trees.")
+         "The consultation added a diversity constraint: avoid near-identical models. We keep exactly "
+         "one Random Forest, remove Extra Trees, and include a Neural Network (the MLP on frozen "
+         "DistilBERT). XGBoost and Random Forest are distinct algorithms - gradient boosting versus "
+         "bagging - and only one of them is a Random Forest.")
 
     h2(doc, "7.2  High-level approach")
     body(doc,
@@ -831,8 +845,9 @@ def build() -> Path:
          "different embedding types:")
     bullet(doc, "Dense document vectors (GloVe, Word2Vec, FastText, Sentence-BERT) are reduced to one "
                 "mean-pooled vector per tweet and passed to a classical estimator.")
-    bullet(doc, "Fine-tuned encoders (DistilBERT) take token ids rather than a precomputed matrix, so "
-                "they are trained end-to-end with a classifier head.")
+    bullet(doc, "Frozen encoders (DistilBERT) take token ids, produce one 768-d masked-mean vector "
+                "per tweet, and hand that matrix to an independently fitted MLP. The encoder is "
+                "never trained, which satisfies the integration rule.")
     body(doc,
          "Mean pooling is a deliberate, documented choice: with tweets of roughly twenty tokens it is "
          "the standard baseline and needs no extra hyper-parameters, which keeps the five models "
@@ -843,25 +858,28 @@ def build() -> Path:
     table(doc,
           ["#", "Embedding", "Analytics model", "Family", "Why this pairing"],
           [
-              ["1", "GloVe glove-wiki-gigaword-100 (frozen)", "Neural Network (MLP)",
-               "Shallow neural", "Pre-trained space + learned non-linear boundary"],
+              ["1", "GloVe glove-wiki-gigaword-100 (frozen)", "Gradient Boosting (XGBoost)",
+               "Boosted trees", "Strong classical learner on dense vectors"],
               ["2", "Word2Vec (trained from scratch)", "Random Forest",
-               "Bagged trees", "One tree ensemble; satisfies the from-scratch criterion"],
+               "Bagged trees", "The only Random Forest; satisfies the from-scratch criterion"],
               ["3", "FastText char 3-6 grams (from scratch)", "Support Vector Machine",
                "Kernel method", "Subword units absorb misspellings and elongation"],
-              ["4", "DistilBERT (fine-tuned)", "Neural classifier head",
-               "Fine-tuned transformer", "Contextual representation; highest expected ceiling"],
+              ["4", "DistilBERT (frozen)", "Neural Network (MLP)",
+               "Frozen transformer + MLP", "Contextual vectors; classifier fitted separately"],
               ["5", "Sentence-BERT all-MiniLM-L6-v2 (frozen)", "k-Nearest-Neighbours",
                "Non-parametric", "Contrasts a neighbour vote against discriminative models"],
           ],
           widths=[0.3, 1.75, 1.25, 1.05, 2.0], font_size=7.6)
 
     body(doc,
-         "The five families are deliberately distinct: a shallow neural network, a bagged tree "
-         "ensemble, a kernel SVM, a fine-tuned transformer and a non-parametric neighbour vote. No "
-         "two models share an algorithm family, which directly answers the feedback that the earlier "
-         "Extra Trees + Random Forest pairing was too similar. The GloVe row was previously XGBoost; "
-         "it is now the MLP, so the matrix contains exactly one tree ensemble.")
+         "The five analytics models are deliberately distinct algorithms: gradient-boosted trees "
+         "(XGBoost), bagged trees (Random Forest), a kernel SVM, a neural network (MLP) and a "
+         "non-parametric neighbour vote. The matrix contains exactly one Random Forest and no Extra "
+         "Trees, which directly answers the consultation feedback. DistilBERT is frozen and paired "
+         "with a separately fitted MLP, so the encoder is an embedding model and the MLP is the "
+         "analytics classifier - the integration rule is satisfied. The end-to-end fine-tuned result "
+         f"({p(ft_ref['test']['accuracy'])} test accuracy) is shown in Section 8 as an upper-bound "
+         "reference only.")
 
     h2(doc, "7.4  Results: CV and test side by side")
     rows = []
@@ -883,17 +901,19 @@ def build() -> Path:
 
     body(doc,
          f"The reference row is the deployed TF-IDF + LR model at {p(ref_row['test_accuracy'])} test "
-         f"accuracy and {ref_row['test_macro_f1']:.3f} macro F1. DistilBERT is the only eligible "
-         f"combination that beats it on accuracy ({p(emb_rows[0]['test_accuracy'])}), and the margin "
-         f"is {dpp(emb_rows[0]['test_accuracy']-ref_row['test_accuracy'])}. On macro F1 the TF-IDF "
-         "reference is still the strongest, which is a useful reminder that accuracy and macro F1 do "
-         "not rank the same models here.")
+         f"accuracy and {ref_row['test_macro_f1']:.3f} macro F1. No eligible combination beats it on "
+         f"accuracy; the closest is frozen DistilBERT + MLP at "
+         f"{p(best_elig['test_accuracy'])} "
+         f"({dpp(best_elig['test_accuracy']-ref_row['test_accuracy'])}). The end-to-end fine-tuned "
+         f"reference reaches {p(ft_ref['test']['accuracy'])}, but it is not an eligible combination. "
+         "On macro F1 the TF-IDF reference is still the strongest, which is a useful reminder that "
+         "accuracy and macro F1 do not rank the same models here.")
 
     h2(doc, "7.5  Reading the results")
     bullet(doc,
            "The CV-to-test column exposes the rank reversal that makes small-data model selection "
            "dangerous. Word2Vec + RF has the third-highest CV accuracy but the lowest test accuracy; "
-           "GloVe + MLP gains "
+           "GloVe + XGBoost gains "
            f"{(next(r for r in emb_rows if r['id']==1)['test_accuracy']-next(r for r in emb_rows if r['id']==1)['cv_accuracy'])*100:+.1f} pp "
            "from CV to test, while Sentence-BERT actually loses "
            f"{(next(r for r in emb_rows if r['id']==5)['cv_accuracy']-next(r for r in emb_rows if r['id']==5)['test_accuracy'])*100:.1f} pp. "
@@ -904,8 +924,9 @@ def build() -> Path:
            "Every non-transformer row reduces a tweet to one mean-pooled vector. For 'not good' that "
            "vector is close to the average of 'not' and 'good', which sits almost on top of 'good'. A "
            "negation flips the label but barely moves the embedding. TF-IDF keeps the bigram 'not "
-           "good' as its own feature, so a linear model can learn it directly. Only DistilBERT avoids "
-           "the problem, because its encoder represents each token given its sentence.",
+           "good' as its own feature, so a linear model can learn it directly. Frozen DistilBERT is "
+           "the only embedding here whose vectors are contextual, which is why it is the strongest "
+           "eligible row even after mean pooling.",
            bold_lead="Why mean pooling hurts sentiment. ")
     bullet(doc,
            "Word2Vec and FastText learned 4,280 vectors from 592 tweets, which is fewer than eight "
@@ -945,11 +966,12 @@ def build() -> Path:
           widths=[2.45, 0.8, 1.05, 0.95, 1.15], font_size=7.8)
 
     body(doc,
-         "Against the required baseline, only DistilBERT wins on accuracy; GloVe + MLP, SBERT + kNN, "
-         "FastText + SVM and Word2Vec + RF all lose. That is not the result the brief might lead one "
-         "to expect, but it is the measured one. The reason is not that embeddings are bad in "
-         "general; it is that a 592-row corpus cannot support the representation they need, and mean "
-         "pooling discards the word order that sentiment depends on.")
+         "Against the required baseline, only frozen DistilBERT + MLP wins on accuracy; GloVe + "
+         "XGBoost, SBERT + kNN, FastText + SVM and Word2Vec + RF all lose. That is not the result "
+         "the brief might lead one to expect, but it is the measured one. The reason is not that "
+         "embeddings are bad in general; it is that a 592-row corpus cannot support the "
+         "representation they need, and mean pooling discards much of the word order that sentiment "
+         "depends on.")
 
     h2(doc, "8.2  Advanced models versus the improved baseline")
     table(doc,
@@ -964,17 +986,19 @@ def build() -> Path:
           widths=[2.35, 0.8, 0.9, 0.95, 1.1], font_size=7.8)
 
     body(doc,
-         "Against the improved TF-IDF baseline the advanced models look weaker still. DistilBERT is "
-         f"{dpp(emb_rows[0]['test_accuracy']-dep['accuracy'])} on accuracy, which is about five test "
-         "rows, and every other embedding is below M2. The honest conclusion is that the advanced "
-         "models did not deliver a practically meaningful gain on this dataset.")
+         "Against the deployed TF-IDF baseline, frozen DistilBERT + MLP is "
+         f"{dpp(best_elig['test_accuracy']-dep['accuracy'])} on accuracy - within three test rows - "
+         "and every other embedding is below M2. The honest conclusion is that no eligible advanced "
+         "model delivered a practically meaningful gain on this dataset.")
 
     h2(doc, "8.3  Which model performs better, and why")
     body(doc,
-         "On test accuracy the ranking is DistilBERT (55.4%), deployed M2 (54.2%), B4 (52.6%), "
-         "SBERT + kNN (48.9%), GloVe + MLP (42.8%), FastText + SVM (40.6%) and Word2Vec + RF (37.8%). "
-         "On macro F1 the order changes: M2 leads, SBERT + kNN is second, and DistilBERT is third. "
-         "There is therefore no single winner; there is a cost-accuracy frontier.")
+         "On test accuracy the ranking is deployed M2 (54.2%), frozen DistilBERT + MLP (53.4%), "
+         "B4 (52.6%), SBERT + kNN (48.9%), GloVe + XGBoost (46.1%), FastText + SVM (40.6%) and "
+         "Word2Vec + RF (37.8%). The end-to-end fine-tuned reference reaches 55.4%, but it is not an "
+         "eligible combination. On macro F1 the order is M2 (0.504), frozen DistilBERT + MLP "
+         "(0.500) and SBERT + kNN (0.461). There is therefore no single winner; there is a "
+         "cost-accuracy frontier.")
     body(doc,
          "The justification for the observed differences has three parts. First, representation: a "
          "contextual encoder is the only representation here that can distinguish 'not good' from "
@@ -983,13 +1007,14 @@ def build() -> Path:
          "lexical model. Third, evaluation noise: one test row is 0.25 pp, so gaps under about 2 pp "
          "are inside the noise band and should not be over-interpreted.")
     body(doc,
-         "For a decision-support system, the practical choice is M2 unless the small DistilBERT edge "
-         "is worth pretraining, CPU time and a heavier deployment. This is a business judgement, not "
-         "a modelling one, and Section 10 states it in those terms.")
+         "For a decision-support system, the practical choice is M2: the frozen transformer does not "
+         "beat it, and the end-to-end fine-tuned reference that does is not an eligible combination "
+         "under the brief. This is a business judgement, not a modelling one, and Section 10 states "
+         "it in those terms.")
 
     figure(doc, "fig14_model_comparison.png", 6.7,
-           "Figure 14 - Final model comparison. DistilBERT leads on accuracy; the TF-IDF models lead "
-           "on macro F1 and on cost.")
+           "Figure 14 - Final model comparison. Frozen DistilBERT + MLP is the strongest eligible "
+           "advanced model; the TF-IDF models lead on macro F1 and on cost.")
 
     # ---------------------------------------------------------- 9 ceiling
     doc.add_page_break()
@@ -1083,9 +1108,10 @@ def build() -> Path:
     h2(doc, "9.5  Verdict on the ceiling")
     body(doc,
          "Three independent limits - label noise, the missing entity column and a 989-row corpus - "
-         "put a realistic ceiling at roughly 60-65%. The deployed model at 54.2% and the best "
-         "transformer at 55.4% sit close to that ceiling. The remaining gap is not a modelling "
-         "deficiency that more hyper-parameter tuning would close; it is a property of the labels.")
+         "put a realistic ceiling at roughly 60-65%. The deployed model at 54.2%, the best eligible "
+         "N = 5 model at 53.4% and the end-to-end fine-tuned reference at 55.4% all sit close to "
+         "that ceiling. The remaining gap is not a modelling deficiency that more hyper-parameter "
+         "tuning would close; it is a property of the labels.")
 
     figure(doc, "fig11_learning_curve.png", 5.9,
            "Figure 16 - Learning curve. The large train-CV gap indicates variance, not a shortage of "
@@ -1125,9 +1151,9 @@ def build() -> Path:
           [
               ["TF-IDF word+char + LR (M2)", p(dep["accuracy"]), p(dep["macro_f1"]),
                "Seconds on CPU; no pretraining", "Default production choice"],
-              ["DistilBERT + neural head", p(emb_rows[0]["test_accuracy"]),
-               p(emb_rows[0]["test_macro_f1"]), "~15 min CPU; 255 MB weights",
-               "Only if the small accuracy edge matters"],
+              ["Frozen DistilBERT + MLP", p(best_elig["test_accuracy"]),
+               p(best_elig["test_macro_f1"]), "~1 min encoding; 255 MB weights",
+               "When contextual vectors are required; does not beat M2"],
               ["SBERT + kNN", p(next(r for r in emb_rows if r['id'] == 5)["test_accuracy"]),
                p(next(r for r in emb_rows if r['id'] == 5)["test_macro_f1"]),
                "~1 min; 90 MB download", "When explainability-by-neighbours is required"],
@@ -1135,9 +1161,10 @@ def build() -> Path:
           widths=[1.8, 0.8, 0.85, 1.55, 1.5], font_size=8.0)
 
     body(doc,
-         "The cost column is part of the result, not an afterthought. DistilBERT buys about one "
-         "accuracy point over a model that trains in seconds. A decision-support system that is cheap "
-         "to retrain and easy to explain is often worth more than a marginally better score.")
+         "The cost column is part of the result, not an afterthought. No eligible advanced model buys "
+         "accuracy over a model that trains in seconds. The end-to-end fine-tuned reference gains 1.3 "
+         "pp, but it is not an eligible combination and costs far more. A decision-support system "
+         "that is cheap to retrain and easy to explain is worth more than a marginal ineligible gain.")
 
     callout(doc, "Service-level reality",
             "State the ceiling in any deployment agreement. A text-only system on this corpus should "
@@ -1175,8 +1202,9 @@ def build() -> Path:
                "delta in its own column."],
               ["6", "Extra Trees and Random Forest were too similar; keep one and use a Neural "
                     "Network for the other.",
-               "The matrix now has exactly one tree ensemble (Random Forest) and an explicit Neural "
-               "Network (GloVe + MLP). Extra Trees is not used. See Section 7.3."],
+               "Extra Trees is removed. The matrix has exactly one Random Forest (Word2Vec) and a "
+               "Neural Network (MLP on frozen DistilBERT); XGBoost and RF are distinct algorithms. "
+               "See Section 7.3."],
               ["7", "Macro F1 rising while accuracy falls slightly can be normal; explain the "
                     "per-class impact.",
                "Section 6.4 reports recall and F1 per class for the deployed and balanced models and "
@@ -1214,8 +1242,10 @@ def build() -> Path:
          f"baseline reaches {p(base_acc)} test accuracy and {p(base_f1)} macro F1. The deployed "
          f"refinement raises that to {p(dep['accuracy'])} and {p(dep['macro_f1'])}. Five distinct "
          f"embedding x analytics-model combinations were built and compared under one protocol; "
-         f"DistilBERT is the best on accuracy at {p(emb_rows[0]['test_accuracy'])}, while the TF-IDF "
-         "models remain best on macro F1 and on cost.")
+         f"frozen DistilBERT + MLP is the best eligible row on accuracy at "
+         f"{p(best_elig['test_accuracy'])}, while the TF-IDF models remain best on macro F1 and on "
+         f"cost. The end-to-end fine-tuned reference reaches {p(ft_ref['test']['accuracy'])} but is "
+         "not an eligible combination.")
     body(doc,
          "The most important result is not a score. It is the measured explanation of why the score "
          "plateaus: label noise, a missing entity column and a small corpus. That explanation is "
@@ -1232,9 +1262,61 @@ def build() -> Path:
     bullet(doc, "Do not invest further in hyper-parameter tuning before the label-noise issue is "
                 "addressed; the experiments show the limit is in the labels, not the model.")
 
-    # ---------------------------------------------------------- 13 repro
+    # ---------------------------------------------------------- 13 management
     doc.add_page_break()
-    h1(doc, "Reproducibility and Artefact Index", "13")
+    h1(doc, "Project Management, Schedule and Contributions", "13")
+
+    body(doc,
+         "The brief allocates 20% to project development and documentation, including a schedule and "
+         "a clear breakdown of individual responsibilities. This section records both, plus a map "
+         "from each assessment criterion to the part of the report that addresses it.")
+
+    h2(doc, "13.1  Project schedule")
+    table(doc,
+          ["Week", "Activity", "Output"],
+          [
+              ["7", "Dataset allocation, schema audit and EDA", "eda_summary.json, Figures 1-7"],
+              ["8", "Cleaning pipeline, encoding repair, audit log", "train_clean/test_clean, cleaning_log.json"],
+              ["9", "TF-IDF + Logistic Regression baseline, CV protocol", "baseline_metrics.json, Figures 9-11"],
+              ["10", "Interim report and consultation session", "Interim report, consultation feedback"],
+              ["11", "Embedding module; GloVe, Word2Vec and FastText rows", "Three embedding result files"],
+              ["12", "DistilBERT and Sentence-BERT rows; N = 5 matrix; headroom experiments", "Matrix, Figures 12-16"],
+              ["13", "Phase 3iv refinement, final report, notebook and presentation", "Final deliverables"],
+          ],
+          widths=[0.55, 3.1, 2.65], font_size=8.0)
+
+    h2(doc, "13.2  Division of work")
+    body(doc,
+         "Primary responsibility for each workstream. Contributions are also recorded in the "
+         "repository history, which contains the staged commit trail for the pipeline, models and "
+         "documents.", italic=True)
+    table(doc,
+          ["Member", "Primary responsibility"],
+          [
+              ["Chao Ka Kin", "EDA, data-quality audit and cleaning pipeline"],
+              ["Leung Wai Tsun", "Baseline model, evaluation protocol and metric tables"],
+              ["LIANG Zijian", "Classical embedding models (GloVe, Word2Vec, FastText)"],
+              ["Lam Kin Ho", "Transformer embeddings (DistilBERT, Sentence-BERT) and the N = 5 matrix"],
+              ["Yeung Tsz Chun Herman", "Integration, report generation, visualisation and repository"],
+          ],
+          widths=[1.9, 4.4], font_size=8.4)
+
+    h2(doc, "13.3  Assessment criteria map")
+    table(doc,
+          ["Criterion", "Weight", "Where it is addressed"],
+          [
+              ["EDA and data cleaning", "20%", "Sections 2-4; Appendices A"],
+              ["Baseline model", "10%", "Section 5; Appendix B"],
+              ["Advanced modelling", "30%", "Section 7; Appendix C"],
+              ["Refinement", "10%", "Section 6"],
+              ["Uniqueness and creativity", "10%", "Sections 3.5, 9 and 10"],
+              ["Project development and documentation", "20%", "This section; Appendix A; repository"],
+          ],
+          widths=[2.4, 0.8, 3.1], font_size=8.4)
+
+    # ---------------------------------------------------------- 14 repro
+    doc.add_page_break()
+    h1(doc, "Reproducibility and Artefact Index", "14")
 
     body(doc, "Every number and figure in this report is generated by code. To reproduce the entire "
               "document from the raw CSVs:")
@@ -1252,10 +1334,11 @@ def build() -> Path:
                                                  "reports/tables/improved_cv_sweep.csv"],
               ["python src/train_improved.py", "Scores the CV-selected B4 once on test, writes "
                                                "models/improved_metrics.json"],
-              ["python src/embed_1_glove_mlp.py", "GloVe + MLP (neural network) row"],
+              ["python src/embed_1_glove_xgb.py", "GloVe + XGBoost row"],
               ["python src/embed_2_word2vec_rf.py", "Word2Vec + Random Forest row"],
               ["python src/embed_3_fasttext_svm.py", "FastText + SVM row"],
-              ["python src/embed_4_bert_head.py", "DistilBERT + neural head row"],
+              ["python src/embed_4_bert_frozen_mlp.py", "DistilBERT (frozen) + MLP row"],
+              ["python src/embed_4_bert_head.py", "End-to-end fine-tuned reference (not counted)"],
               ["python src/embed_5_sbert_knn.py", "Sentence-BERT + kNN row"],
               ["python src/experiments_embeddings.py", "Assembles the N = 5 matrix, Figures 12-14"],
               ["python src/experiments_headroom.py", "E1-E4 ceiling experiments (Section 9)"],
@@ -1333,7 +1416,7 @@ def build() -> Path:
         1: ("glove_mlp", "GloVe + Neural Network (MLP)"),
         2: ("word2vec_rf", "Word2Vec + Random Forest"),
         3: ("fasttext_svm", "FastText + SVM"),
-        4: ("bert_head", "DistilBERT + Neural head"),
+        4: ("bert_frozen_mlp", "DistilBERT (frozen) + MLP"),
         5: ("sbert_knn", "Sentence-BERT + kNN"),
     }
     for key, (fname, label) in files.items():

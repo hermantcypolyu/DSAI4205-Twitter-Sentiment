@@ -21,10 +21,10 @@ import pandas as pd
 from embeddings_common import FIG, MODELS, PALETTE, PROC, TAB
 
 RESULTS = [
-    ("glove_mlp", "GloVe (glove-wiki-gigaword-100)", "Neural Network (MLP)", True),
+    ("glove_xgb", "GloVe (glove-wiki-gigaword-100)", "Gradient Boosting (XGBoost)", True),
     ("word2vec_rf", "Word2Vec (trained from scratch)", "Random Forest", True),
     ("fasttext_svm", "FastText (subword)", "Support Vector Machine", True),
-    ("bert_head", "BERT (fine-tuned)", "Neural classifier head", True),
+    ("bert_frozen_mlp", "DistilBERT (frozen)", "Neural Network (MLP)", True),
     ("sbert_knn", "Sentence-BERT (all-MiniLM-L6-v2)", "k-Nearest-Neighbours", True),
 ]
 
