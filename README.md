@@ -14,7 +14,7 @@
 
 | I want to... | Open this |
 |---|---|
-| **Submit / show my professor** | `reports/Interim_Report_Group8_Twitter_Sentiment.docx` |
+| **Submit / show my professor** | `reports/Final_Report_Group8_Twitter_Sentiment.docx` |
 | **Understand the project in Cantonese** | `reports/白話解釋手冊_Group8_Twitter情緒分析.docx` |
 | **Submit the technical deliverable** | `DSAI4205_Interim_Group8_Twitter_Sentiment.ipynb` |
 | **Prepare for the consultation Q&A** | 白話解釋手冊 → Chapter 7 (Q&A cheat sheet) |
@@ -212,12 +212,19 @@ python src/explore_transformer.py roberta-base 4
 python src/explore_transformer.py microsoft/deberta-v3-small 4
 
 # --- N = 5 embedding x analytics-model matrix (Weeks 11-13) -------------
-python src/embed_1_glove_xgb.py       # GloVe -> XGBoost   (~1 min, 66 MB download)
+python src/embed_1_glove_mlp.py       # GloVe -> Neural Net (MLP) (~30 s, cached vectors)
 python src/embed_2_word2vec_rf.py     # Word2Vec -> RF     (~10 s)
 python src/embed_3_fasttext_svm.py    # FastText -> SVM    (~5 s)
 python src/embed_4_bert_head.py       # DistilBERT head    (~15 min CPU)
 python src/embed_5_sbert_knn.py       # Sentence-BERT k-NN (~1 min, 90 MB download)
 python src/experiments_embeddings.py  # assemble -> reports/tables/embedding_model_matrix.csv
+
+# --- Phase 3iv baseline refinement (train-only CV, then one test score) --
+python src/explore_improved.py        # CV sweep -> reports/tables/improved_cv_sweep.csv
+python src/train_improved.py          # -> models/improved_metrics.json
+
+# --- final report --------------------------------------------------------
+python src/make_final_report.py       # -> reports/Final_Report_Group8_Twitter_Sentiment.docx
 
 # --- documents ----------------------------------------------------------
 python src/make_interim_report.py   # rebuild the formal .docx
@@ -379,10 +386,13 @@ once** per model.
 | 4 | DistilBERT (**fine-tuned**) | Neural classifier head | `embed_4_bert_head.py` |
 | 5 | Sentence-BERT `all-MiniLM-L6-v2` (frozen, 384-d) | k-Nearest-Neighbours (k=25, cosine) | `embed_5_sbert_knn.py` |
 
-The five are deliberately drawn from **different model families** — boosted
-trees, bagged trees, kernel SVM, a neural head, and a non-parametric neighbour
-vote — because the brief penalises near-identical tree models for lack of
-diversity. Assemble all five with `src/experiments_embeddings.py`.
+The five are deliberately drawn from **different model families** — a shallow
+neural network, bagged trees, a kernel SVM, a fine-tuned transformer, and a
+non-parametric neighbour vote — because the brief penalises near-identical tree
+models for lack of diversity. The consultation asked us to keep only one of
+Extra Trees / Random Forest and use a Neural Network for the other, so the
+GloVe row is now an MLP (not XGBoost) and Random Forest is the only tree
+ensemble. Assemble all five with `src/experiments_embeddings.py`.
 
 ### Results
 
@@ -393,7 +403,7 @@ Source: `reports/tables/embedding_model_matrix.csv` (written by
 |---|---|---|---|---|---|---|---|
 | 4 | DistilBERT (fine-tuned) | Neural classifier head | 53.7% ± 3.2 | **55.4%** | 0.4485 | 0.381 | 76.1% |
 | 5 | Sentence-BERT (all-MiniLM-L6-v2) | k-NN (k=25, cosine) | 49.7% ± 2.1 | **48.9%** | 0.4611 | 0.300 | 68.8% |
-| 1 | GloVe (glove-wiki-gigaword-100) | Gradient Boosting (XGBoost) | 36.8% ± 4.6 | **46.1%** | 0.4176 | 0.261 | 74.1% |
+| 1 | GloVe (glove-wiki-gigaword-100) | Neural Network (MLP) | 40.9% ± 3.1 | **42.8%** | 0.4095 | 0.222 | 73.0% |
 | 3 | FastText (char 3–6-grams, from scratch) | SVM (RBF) | 39.2% ± 4.9 | **40.6%** | 0.3249 | 0.169 | 67.8% |
 | 2 | Word2Vec (from scratch) | Random Forest (500) | 43.1% ± 3.5 | **37.8%** | 0.3205 | 0.134 | 67.8% |
 | — | *TF-IDF (word + char union)* | *Logistic Regression (deployed)* | *49.2%* | *54.2%* | *0.5042* | *0.367* | *75.8%* |
@@ -409,10 +419,11 @@ above the deployed TF-IDF model and 25.2 pp above the majority baseline. Because
 one test row is worth 0.252 pp, the DistilBERT-vs-TF-IDF gap is about **5 rows**
 — statistically real (test is fixed, seed is fixed) but substantively small.
 
-**Rank reversal between CV and test.** Word2Vec + RF has the *second-highest*
+**Rank reversal between CV and test.** Word2Vec + RF has the *third-highest*
 CV accuracy (43.1%) but the *lowest* test accuracy (37.8%) — a 5.3 pp collapse,
-the largest in the matrix. FastText moves the other way (CV 39.2%, test 40.6%)
-and GloVe moves most of all (CV 36.8%, test 46.1%, +9.3 pp). With 592 training
+the largest in the matrix. FastText moves the other way (CV 39.2%, test 40.6%),
+GloVe + MLP gains 1.9 pp, and Sentence-BERT is the only model to fall (48.9%
+test vs 49.7% CV). With 592 training
 rows, CV folds share one fitted embedding space and so are not independent
 estimates of generalisation — which is why the project reports a single held-out
 test score rather than trusting CV.
@@ -440,8 +451,8 @@ FastText both produced a **4,280-vector vocabulary** (the `notes` column of
 than 8 occurrences per training row before duplicate tokens are even considered.
 Distributional methods cannot estimate a stable vector from one or two
 occurrences, so much of the learned space is noise. GloVe has 400,000 vectors
-from 6 billion tokens and scores much better (46.1%) under the *same* XGBoost
-pipeline — the classifier is identical, only the space changed.
+from 6 billion tokens and scores better (42.8%) under a neural head — the
+representation is the only thing that changed.
 
 **3. Coverage is not the problem — quality is.** GloVe's out-of-vocabulary rate
 on training tokens is only **17.9%** (`notes` column), so coverage cannot explain
