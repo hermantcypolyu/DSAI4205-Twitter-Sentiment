@@ -227,7 +227,7 @@ def build() -> Path:
         ("11", "Response to Consultation Feedback", "How each comment was addressed"),
         ("12", "Limitations, Conclusion and Recommendations", "What the system can and cannot do"),
         ("13", "Project Management, Schedule and Contributions", "Delivery record and assessment map"),
-        ("14", "Reproducibility and Artefact Index", "How a marker can re-run everything"),
+        ("14", "Reproducibility and Notebook Guide", "The single notebook deliverable"),
         ("A", "Appendix - Cleaning Log", "Row-level audit trail"),
         ("B", "Appendix - Full Metric Detail", "CV variants and model comparisons"),
         ("C", "Appendix - Per-Class Results (N = 5)", "Precision, recall and F1 for every model"),
@@ -576,10 +576,9 @@ def build() -> Path:
 
     body(doc,
          "We designed the pipeline as a sequence of auditable steps. Each step records what it "
-         "changed, how many rows it touched and what rule it applied. The full log is written to "
-         "data/processed/cleaning_log.json and reproduced in Appendix A. Every step is applied "
-         "identically to train and test using the same shared function, so the two files cannot drift "
-         "apart.")
+         "changed, how many rows it touched and what rule it applied. The full log is recorded in "
+         "the submitted notebook and reproduced in Appendix A. Every step is applied identically to "
+         "train and test using the same shared function, so the two files cannot drift apart.")
 
     steps = log["train"]["steps"]
     table(doc,
@@ -743,8 +742,8 @@ def build() -> Path:
          "Phase 3iv asks for the baseline to be improved and then re-compared with the advanced "
          "models. We treated this as a model-selection problem with a fixed protocol: every candidate "
          "was scored by 5-fold stratified CV on the training file only, the winning configuration was "
-         "frozen, and the test file was then scored once. The sweep is reproducible with "
-         "src/explore_improved.py and its full table is in reports/tables/improved_cv_sweep.csv.")
+         "frozen, and the test file was then scored once. The sweep is embedded in the submitted "
+         "notebook, and its full table appears in Section 6.2.")
 
     h2(doc, "6.1  What changed")
     body(doc,
@@ -846,7 +845,7 @@ def build() -> Path:
 
     h2(doc, "7.2  High-level approach")
     body(doc,
-         "All five combinations share one protocol module, src/embeddings_common.py: identical rows, "
+         "All five combinations share one protocol, embedded in the submitted notebook: identical rows, "
          "identical folds (StratifiedKFold with five splits, shuffle, seed 42), the same metric block, "
          "CV on train only, and the test file scored exactly once per model. Two adapters cover the "
          "different embedding types:")
@@ -1066,7 +1065,8 @@ def build() -> Path:
     h2(doc, "9.3  Four controlled experiments")
     body(doc,
          "We investigated the ceiling rather than assuming it. Each experiment uses train-only CV or "
-         "the fixed test predictions, and each is reproducible from src/experiments_headroom.py.")
+         "the fixed test predictions, and each is reproducible from the headroom experiments "
+         "embedded in the submitted notebook.")
     table(doc,
           ["Experiment", "Question", "Result", "Interpretation"],
           [
@@ -1295,8 +1295,8 @@ def build() -> Path:
     h2(doc, "13.2  Division of work")
     body(doc,
          "All five members contributed to drafting, reviewing and editing this report. The table "
-         "records primary ownership of each technical workstream; contributions are also recorded in "
-         "the repository history.", italic=True)
+         "records primary ownership of each technical workstream; the submitted notebook also records "
+         "the staged development of the pipeline and models.", italic=True)
     table(doc,
           ["Member", "Primary responsibility"],
           [
@@ -1306,8 +1306,8 @@ def build() -> Path:
               ["LIANG Zijian", "Baseline model, evaluation protocol and metric tables (Section 5)"],
               ["Lam Kin Ho", "Error analysis and business insights (Sections 9.1-9.2 and 10)"],
               ["Yeung Tsz Chun Herman", "Technical co-lead; pipeline architecture and integration, "
-                                        "ceiling and label-noise experiments, repository, notebook "
-                                        "and report compilation (Sections 7.2, 9.3-9.5 and 13-14)"],
+                                        "ceiling and label-noise experiments, notebook and report "
+                                        "compilation (Sections 7.2, 9.3-9.5 and 13-14)"],
           ],
           widths=[1.9, 4.4], font_size=8.4)
 
@@ -1320,70 +1320,62 @@ def build() -> Path:
               ["Advanced modelling", "30%", "Section 7; Appendix C"],
               ["Refinement", "10%", "Section 6"],
               ["Uniqueness and creativity", "10%", "Sections 3.5, 9 and 10"],
-              ["Project development and documentation", "20%", "This section; Appendix A; repository"],
+              ["Project development and documentation", "20%", "This section; Appendix A; submitted notebook"],
           ],
           widths=[2.4, 0.8, 3.1], font_size=8.4)
 
     # ---------------------------------------------------------- 14 repro
     doc.add_page_break()
-    h1(doc, "Reproducibility and Artefact Index", "14")
+    h1(doc, "Reproducibility and Notebook Guide", "14")
 
-    body(doc, "Every number and figure in this report can be traced to a checked-in artefact. To "
-              "reproduce the full analysis from the raw CSVs:")
-
-    table(doc,
-          ["Command", "What it produces"],
-          [
-              ["python src/run_pipeline.py", "Cleans both files, writes data/processed/*.csv and "
-                                              "cleaning_log.json and Figures 1-8"],
-              ["python src/train_baseline.py", "Trains the Phase 3i baseline, writes "
-                                               "models/baseline_metrics.json and Figures 9-11"],
-              ["python src/train_final.py", "Trains M1-M3, writes models/final_metrics.json, "
-                                            "Figure 15"],
-              ["python src/explore_improved.py", "Train-only CV sweep for Phase 3iv, writes "
-                                                 "reports/tables/improved_cv_sweep.csv"],
-              ["python src/train_improved.py", "Scores the CV-selected B4 once on test, writes "
-                                               "models/improved_metrics.json"],
-              ["python src/embed_1_glove_xgb.py", "GloVe + XGBoost row"],
-              ["python src/embed_2_word2vec_rf.py", "Word2Vec + Random Forest row"],
-              ["python src/embed_3_fasttext_svm.py", "FastText + SVM row"],
-              ["python src/embed_4_bert_frozen_mlp.py", "DistilBERT (frozen) + MLP row"],
-              ["python src/embed_4_bert_head.py", "End-to-end fine-tuned reference (not counted)"],
-              ["python src/embed_5_sbert_knn.py", "Sentence-BERT + kNN row"],
-              ["python src/experiments_embeddings.py", "Assembles the N = 5 matrix, Figures 12-14"],
-              ["python src/experiments_headroom.py", "E1-E4 ceiling experiments (Section 9)"],
-              ["python src/make_final_report.py", "Rebuilds this report"],
-          ],
-          widths=[2.35, 3.95], font_size=7.8)
+    body(doc,
+         "The technical deliverable is a single, self-contained Jupyter notebook. It contains all "
+         "preprocessing code, the shared evaluation protocol, the five model implementations, the "
+         "dataset and the recorded result tables. No external source files are required to run it.")
 
     table(doc,
-          ["Artefact", "Location", "Purpose"],
+          ["Notebook part", "What it contains", "How to use it"],
           [
-              ["Raw data", "Data 5 - Twitter/Data 5 - Twitter/*.csv", "Untouched source files"],
-              ["Cleaned data", "data/processed/train_clean.csv, test_clean.csv", "Model-ready rows"],
-              ["Cleaning log", "data/processed/cleaning_log.json", "Row-level audit trail"],
-              ["EDA summary", "data/processed/eda_summary.json", "All EDA statistics"],
-              ["Baseline metrics", "models/baseline_metrics.json", "Phase 3i scores"],
-              ["Final metrics", "models/final_metrics.json", "M1-M3 and deployed scores"],
-              ["Improved metrics", "models/improved_metrics.json", "Phase 3iv scores"],
-              ["N = 5 summary", "data/processed/embedding_matrix_summary.json", "All five result rows"],
-              ["Headroom summary", "data/processed/headroom_summary.json", "E1-E4 results"],
-              ["Figures", "reports/figures/", "Sixteen publication-quality charts"],
-              ["Tables", "reports/tables/", "CSV exports of every metric table"],
+              ["Part I (Sections 1-7)", "EDA, data-quality audit, cleaning pipeline, TF-IDF + "
+                                          "Logistic Regression baseline",
+               "Run cells in order; the analysis executes live on the embedded dataset"],
+              ["Part II (Sections 8-13)", "N = 5 embedding x model matrix, Phase 3iv refinement, "
+                                            "comparison, class-weight trade-off, business insights",
+               "Displays the recorded results; the model code is included"],
+              ["Section 14", "Full source of the shared protocol and all five model scripts",
+               "Read the code or call the functions directly"],
+              ["Section 15", "Live retraining switch",
+               "RETRAIN = True retrains all five models on a kernel with gensim; otherwise it falls "
+               "back to the recorded results"],
           ],
-          widths=[1.5, 2.5, 2.3], font_size=8.0)
+          widths=[1.25, 2.7, 2.35], font_size=7.8)
+
+    body(doc,
+         "The reported numbers are from one recorded run. Section 15 of the notebook can retrain all "
+         "five models from scratch; because library versions differ, a fresh run can move individual "
+         "scores by one or two percentage points. The conclusions in this report do not depend on "
+         "those small differences.")
+
+    table(doc,
+          ["Deliverable", "Contents"],
+          [
+              ["Submitted notebook (.ipynb)", "All code, the embedded dataset, the cleaning log and "
+                                               "the recorded results"],
+              ["This report (.docx)", "Cumulative written analysis, 16 figures and the business "
+                                       "insights"],
+          ],
+          widths=[2.2, 4.1], font_size=8.4)
 
     callout(doc, "Reproducibility guarantee",
-            "Every number in this report is tied to a JSON or CSV artefact in the repository, so any "
-            "figure can be checked against its source. If the analysis is repeated on a refreshed "
-            "dataset, the tables can be updated from the same artefacts and cannot silently disagree "
-            "with the code.")
+            "Every number in this report corresponds to a result recorded in the submitted notebook. "
+            "The notebook can be run end to end, and the retraining switch reproduces the full N = 5 "
+            "matrix without requiring any external file.")
 
     # ---------------------------------------------------------- A cleaning log
     doc.add_page_break()
     h1(doc, "Appendix A - Cleaning Log (training file)", "A")
-    body(doc, "Verbatim from data/processed/cleaning_log.json. The test file is processed with "
-              "identical rules and is recorded in the same file.", italic=True)
+    body(doc, "Verbatim from the cleaning log recorded in the submitted notebook. The test file is "
+              "processed with identical rules and is recorded in the same log.", italic=True)
     for s in steps:
         p_ = doc.add_paragraph()
         p_.paragraph_format.space_before = Pt(6)
