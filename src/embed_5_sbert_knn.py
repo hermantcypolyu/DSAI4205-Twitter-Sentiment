@@ -32,13 +32,13 @@ from sklearn.preprocessing import StandardScaler
 from embeddings_common import (SEED, Timer, cv_and_test, load_data, report,
                                save_result, score_block)
 
-MODEL_NAME = "all-MiniLM-L6-v2"
+SBERT_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 K = 25
 
 
 def main() -> None:
     print("=" * 88)
-    print(f"5/5  Sentence-BERT {MODEL_NAME} (384-d, frozen)  ->  kNN (k={K}, cosine)")
+    print(f"5/5  Sentence-BERT {SBERT_MODEL} (384-d, frozen)  ->  kNN (k={K}, cosine)")
     print("=" * 88)
 
     from sentence_transformers import SentenceTransformer
@@ -46,8 +46,8 @@ def main() -> None:
     X_tr, X_te, y_tr, y_te = load_data()
     print(f"  train {len(X_tr)} | test {len(X_te)}")
 
-    print(f"  encoding with {MODEL_NAME} ...")
-    enc = SentenceTransformer(MODEL_NAME, device="cpu")
+    print(f"  encoding with {SBERT_MODEL} ...")
+    enc = SentenceTransformer(SBERT_MODEL, device="cpu")
     dim = enc.get_sentence_embedding_dimension()
     E_tr = enc.encode(list(X_tr), batch_size=64, show_progress_bar=False,
                       convert_to_numpy=True, normalize_embeddings=True)
@@ -73,7 +73,7 @@ def main() -> None:
                 "k-Nearest-Neighbours", cv, test,
                 {"cv_accuracy_sd": meta["cv_accuracy_sd"],
                  "embedding_dim": int(dim),
-                 "embedding_source": f"{MODEL_NAME}, frozen",
+                 "embedding_source": f"{SBERT_MODEL}, frozen",
                  "pooling": "SBERT sentence encoder",
                  "runtime_s": round(t1.seconds, 1),
                  "notes": f"k={K}, cosine, distance-weighted vote"})

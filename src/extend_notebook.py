@@ -249,6 +249,16 @@ IMPL_FILES = [
     "src/train_improved.py",
 ]
 
+MAIN_ALIASES = {
+    "embed_1_glove_xgb.py": "glove_xgb",
+    "embed_2_word2vec_rf.py": "word2vec_rf",
+    "embed_3_fasttext_svm.py": "fasttext_svm",
+    "embed_4_bert_frozen_mlp.py": "bert_frozen_mlp",
+    "embed_5_sbert_knn.py": "sbert_knn",
+    "experiments_embeddings.py": "assemble_matrix",
+    "train_improved.py": "train_improved",
+}
+
 
 def strip_main(src: str) -> str:
     """Remove the `if __name__ == '__main__': main()` block.
@@ -320,8 +330,10 @@ SETUP_NOTE = md("""> **Submission note: this notebook is fully self-contained.**
 > (`traindata.csv`, `testdata.csv`) is embedded, and the final result tables
 > are embedded as a fallback. The first cell installs the small dependencies
 > and the NLTK data into the kernel you are using, then reconstructs the
-> dataset beside the notebook. **Run All does not retrain the five models**;
-> it runs the EDA/baseline sections live and displays the recorded results.""")
+> dataset beside the notebook. **Run All does not retrain the five models by
+> default**; it runs the EDA/baseline sections live and displays the recorded
+> results. To retrain all five, select the `DSAI4205 Train (Python 3.12)` kernel
+> and set `RETRAIN = True` in Section 15.""")
 
 
 def _csv_rows(path: Path) -> list[dict]:
@@ -418,9 +430,58 @@ print("Repository root located.")"""))
                 "_sys.modules['embeddings_common'] = _ec\n"
                 "print('embeddings_common loaded from the notebook.')"
             )
+        alias = MAIN_ALIASES.get(Path(rel).name)
+        if alias:
+            source += (
+                f"\n\n# unique entry point so the live-retraining cell can call this model\n"
+                f"main_{alias} = main"
+            )
         nb["cells"].append(md(f"### `{rel}`"))
         nb["cells"].append(code(source))
 
+    nb["cells"].append(md("""## 15. Live retraining of all five models
+
+`RETRAIN = True` is the default. On the **`DSAI4205 Train (Python 3.12)`**
+kernel, Run All retrains all five models and rebuilds the matrix. Expect roughly
+10-20 minutes and ~500 MB of model downloads on the first run.
+
+On a kernel without `gensim` (for example Python 3.14), the cell falls back to
+the recorded results instead of failing, so Run All always completes.
+
+Fresh results can differ by 1-2 pp from the recorded run because of library
+versions (XGBoost, torch, gensim). Both are valid runs of the same pipeline.
+"""))
+    nb["cells"].append(code("""# Live retraining switch. On the "DSAI4205 Train (Python 3.12)" kernel this
+# retrains all five models. On a kernel without gensim it falls back to the
+# recorded results instead of failing.
+RETRAIN = True
+
+if RETRAIN:
+    try:
+        import gensim  # noqa: F401
+    except ModuleNotFoundError:
+        print("gensim is not available in this kernel - using the recorded results.")
+        print("Select 'DSAI4205 Train (Python 3.12)' to retrain all five models.")
+        RETRAIN = False
+
+if RETRAIN:
+    main_glove_xgb()          # GloVe + XGBoost
+    main_word2vec_rf()        # Word2Vec + Random Forest
+    main_fasttext_svm()       # FastText + SVM
+    main_bert_frozen_mlp()    # DistilBERT (frozen) + MLP
+    main_sbert_knn()          # Sentence-BERT + kNN
+    main_train_improved()     # Phase 3iv baseline
+    main_assemble_matrix()    # rebuild reports/tables/embedding_model_matrix.csv
+    print("\\nAll five models retrained. The next cell shows the fresh matrix.")
+else:
+    print("Using the recorded results shown above.")"""))
+    nb["cells"].append(code("""# Fresh results (reads the files written by the retraining cell).
+try:
+    fresh = pd.read_csv("reports/tables/embedding_model_matrix.csv")
+except FileNotFoundError:
+    fresh = pd.DataFrame(PART2_DATA["matrix"])
+cols = ["id", "embedding", "analytics_model", "cv_accuracy", "test_accuracy", "test_macro_f1"]
+display(fresh.sort_values("test_accuracy", ascending=False)[cols].round(4).reset_index(drop=True))"""))
     nb["cells"].append(CELLS[-1])  # closing markdown
 
     with open(OUT_NB, "w", encoding="utf-8") as f:

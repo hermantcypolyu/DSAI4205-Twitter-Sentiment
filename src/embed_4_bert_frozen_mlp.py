@@ -31,13 +31,13 @@ from sklearn.preprocessing import StandardScaler
 from embeddings_common import (SEED, Timer, cv_and_test, load_data, report,
                                save_result, score_block)
 
-MODEL_NAME = "distilbert-base-uncased"
+BERT_MODEL = "distilbert-base-uncased"
 MAX_LEN = 64
 
 
 def main() -> None:
     print("=" * 88)
-    print(f"4/5  {MODEL_NAME} (frozen)  ->  Neural Network (MLP)")
+    print(f"4/5  {BERT_MODEL} (frozen)  ->  Neural Network (MLP)")
     print("=" * 88)
 
     # imported here so the notebook cell can define this function without
@@ -48,8 +48,8 @@ def main() -> None:
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"  device: {device}")
 
-    tok = AutoTokenizer.from_pretrained(MODEL_NAME)
-    model = AutoModel.from_pretrained(MODEL_NAME).eval().to(device)
+    tok = AutoTokenizer.from_pretrained(BERT_MODEL)
+    model = AutoModel.from_pretrained(BERT_MODEL).eval().to(device)
     for p in model.parameters():
         p.requires_grad_(False)
 
@@ -95,7 +95,7 @@ def main() -> None:
                 cv, test,
                 {"cv_accuracy_sd": meta["cv_accuracy_sd"],
                  "embedding_dim": 768,
-                 "embedding_source": f"{MODEL_NAME}, frozen",
+                 "embedding_source": f"{BERT_MODEL}, frozen",
                  "pooling": "masked mean of last hidden state",
                  "runtime_s": round(t_enc.seconds + t.seconds, 1),
                  "notes": "encoder frozen; MLP 512-256 trained separately"})

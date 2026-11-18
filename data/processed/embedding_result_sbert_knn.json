@@ -1,5 +1,5 @@
 {
-  "id": 4,
+  "id": 5,
   "embedding": "Sentence-BERT (all-MiniLM-L6-v2)",
   "analytics_model": "k-Nearest-Neighbours",
   "cv": {
@@ -80,8 +80,8 @@
   },
   "cv_accuracy_sd": 0.02092053592883067,
   "embedding_dim": 384,
-  "embedding_source": "all-MiniLM-L6-v2, frozen",
+  "embedding_source": "sentence-transformers/all-MiniLM-L6-v2, frozen",
   "pooling": "SBERT sentence encoder",
-  "runtime_s": 0.1,
+  "runtime_s": 0.2,
   "notes": "k=25, cosine, distance-weighted vote"
 }

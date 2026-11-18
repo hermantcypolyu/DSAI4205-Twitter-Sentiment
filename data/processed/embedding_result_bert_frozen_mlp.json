@@ -82,6 +82,6 @@
   "embedding_dim": 768,
   "embedding_source": "distilbert-base-uncased, frozen",
   "pooling": "masked mean of last hidden state",
-  "runtime_s": 47.0,
+  "runtime_s": 77.2,
   "notes": "encoder frozen; MLP 512-256 trained separately"
 }

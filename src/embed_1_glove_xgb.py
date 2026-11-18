@@ -17,13 +17,41 @@ Writes: data/processed/embedding_result_glove_xgb.json
 """
 from __future__ import annotations
 
+import gzip
+import urllib.request
+
 import numpy as np
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-from embeddings_common import (SEED, DocumentVectorizer, Timer, cv_and_test,
-                               load_data, report, save_result, score_block,
-                               tokens_of)
+from embeddings_common import (ROOT, SEED, DocumentVectorizer, Timer,
+                               cv_and_test, load_data, report, save_result,
+                               score_block, tokens_of)
+
+GLOVE_URL = ("https://github.com/RaRe-Technologies/gensim-data/releases/download/"
+             "glove-wiki-gigaword-100/glove-wiki-gigaword-100.gz")
+
+
+def load_glove(path):
+    """Parse the gzipped GloVe archive into {word: vector}.
+
+    Downloaded directly rather than through gensim.downloader, which needs its
+    own index file and fails in restricted networks.
+    """
+    if not path.exists():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        print("  downloading GloVe (~129 MB) ...")
+        urllib.request.urlretrieve(GLOVE_URL, path)
+    kv = {}
+    with gzip.open(path, "rt", encoding="utf-8") as f:
+        for line in f:
+            parts = line.rstrip().split(" ")
+            if len(parts) < 3:
+                continue
+            if len(parts) == 2 and parts[0].isdigit():
+                continue
+            kv[parts[0]] = np.asarray(parts[1:], dtype=np.float32)
+    return kv
 
 
 def main() -> None:
@@ -34,10 +62,10 @@ def main() -> None:
     # imported here so the notebook cell can define this function without
     # requiring xgboost at cell-execution time
     from xgboost import XGBClassifier
-    import gensim.downloader as api
-    print("  loading GloVe (cached after first download, ~66 MB) ...")
-    kv = api.load("glove-wiki-gigaword-100")
-    dim = kv.vector_size
+    cache = ROOT / ".cache" / "glove-wiki-gigaword-100.gz"
+    print("  loading GloVe (cached after first download) ...")
+    kv = load_glove(cache)
+    dim = len(next(iter(kv.values())))
     print(f"  vocabulary {len(kv):,} words | dim {dim}")
 
     X_tr, X_te, y_tr, y_te = load_data()
