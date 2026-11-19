@@ -1416,7 +1416,7 @@ def build() -> Path:
     h1(doc, "Appendix C - Per-Class Results for the N = 5 Matrix", "C")
 
     files = {
-        1: ("glove_mlp", "GloVe + Neural Network (MLP)"),
+        1: ("glove_xgb", "GloVe + XGBoost"),
         2: ("word2vec_rf", "Word2Vec + Random Forest"),
         3: ("fasttext_svm", "FastText + SVM"),
         4: ("bert_frozen_mlp", "DistilBERT (frozen) + MLP"),
